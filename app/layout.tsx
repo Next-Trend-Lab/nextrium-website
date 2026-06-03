@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     description: 'Innovation. Incubation. Impact.',
     url: 'https://nextrium.org',
     siteName: 'NexTrium',
-    images: [{ url: '/og-dark.png', width: 1200, height: 630 }],
+    images: [{ url: '/android-chrome-512x512.png', width: 512, height: 512 }],
     locale: 'en_US',
     type: 'website',
   },
@@ -37,9 +37,19 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'NexTrium Global Innovations Ltd',
     description: 'Innovation. Incubation. Impact.',
-    images: ['/og-dark.png'],
+    images: ['/android-chrome-512x512.png'],
   },
-  icons: { icon: '/favicon.png' },
+  icons: {
+    icon: [
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+    other: [
+      { rel: 'android-chrome', url: '/android-chrome-192x192.png' },
+      { rel: 'android-chrome', url: '/android-chrome-512x512.png' },
+    ],
+  },
 }
 
 export default function RootLayout({
@@ -57,3 +67,4 @@ export default function RootLayout({
     </html>
   )
 }
+
