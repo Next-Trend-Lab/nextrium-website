@@ -29,48 +29,58 @@ export default function Footer() {
     <>
       <style>{`
         .footer {
-          background: var(--navy-deep); padding: 60px 0 32px;
-          border-top: 1px solid rgba(255,255,255,0.05);
+          background: var(--navy);
+          padding: 72px 0 36px;
+          border-top: 1px solid rgba(255,255,255,0.08);
         }
         .footer-grid {
-          display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
-          gap: 48px; margin-bottom: 48px;
+          display: grid;
+          grid-template-columns: 2fr 1fr 1fr 1fr;
+          gap: 48px;
+          margin-bottom: 56px;
         }
         .footer-col-title {
-          font-family: var(--font-dm); font-size: 11px; font-weight: 500;
-          color: var(--grey-mid); letter-spacing: 0.05em;
-          text-transform: uppercase; margin-bottom: 16px;
+          font-family: var(--font-mono);
+          font-size: 9px; font-weight: 700;
+          color: var(--grey-mid);
+          letter-spacing: 0.2em; text-transform: uppercase;
+          margin-bottom: 20px;
         }
-        .footer-links { display: flex; flex-direction: column; gap: 10px; }
+        .footer-links { display: flex; flex-direction: column; gap: 12px; }
         .footer-links a {
-          font-family: var(--font-dm); font-size: 14px;
-          color: var(--grey-dark); text-decoration: none;
+          font-family: var(--font-dm);
+          font-size: 15px;
+          color: var(--off-white);
+          text-decoration: none;
           transition: color var(--transition-base);
+          line-height: 1.4;
         }
-        .footer-links a:hover { color: var(--white); }
+        .footer-links a:hover { color: var(--orange); }
         .footer-tagline {
-          font-family: var(--font-mono); font-size: 8px;
-          letter-spacing: 0.15em; text-transform: uppercase;
-          color: var(--grey-dark); margin-top: 12px; margin-bottom: 20px;
+          font-family: var(--font-mono);
+          font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+          color: var(--grey-mid); margin-top: 14px; margin-bottom: 20px;
         }
         .footer-rc {
-          font-family: var(--font-mono); font-size: 8px;
-          letter-spacing: 0.08em; color: var(--grey-dark); line-height: 1.9;
+          font-family: var(--font-mono);
+          font-size: 10px; letter-spacing: 0.06em;
+          color: var(--grey-mid); line-height: 2;
         }
         .footer-bottom {
           display: flex; align-items: center; justify-content: space-between;
-          padding-top: 32px; border-top: 1px solid rgba(255,255,255,0.05);
+          padding-top: 32px;
+          border-top: 1px solid rgba(255,255,255,0.08);
           flex-wrap: wrap; gap: 16px;
         }
         .footer-copy {
-          font-family: var(--font-mono); font-size: 8px;
-          letter-spacing: 0.1em; color: var(--grey-dark);
+          font-family: var(--font-mono);
+          font-size: 10px; letter-spacing: 0.08em; color: var(--grey-mid);
         }
-        .footer-social { display: flex; gap: 16px; }
+        .footer-social { display: flex; gap: 24px; }
         .footer-social a {
-          font-family: var(--font-mono); font-size: 8px;
-          letter-spacing: 0.1em; text-transform: uppercase;
-          color: var(--grey-dark); text-decoration: none;
+          font-family: var(--font-mono);
+          font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+          color: var(--grey-mid); text-decoration: none;
           transition: color var(--transition-base);
         }
         .footer-social a:hover { color: var(--orange); }
@@ -117,7 +127,7 @@ export default function Footer() {
             <div className="footer-social">
               <a href="#" rel="noopener noreferrer">Twitter</a>
               <a href="#" rel="noopener noreferrer">LinkedIn</a>
-              <a href="https://github.com/NexTrium" target="_blank" rel="noopener noreferrer">GitHub</a>
+              <a href="https://github.com/Next-Trend-Lab" target="_blank" rel="noopener noreferrer">GitHub</a>
             </div>
           </div>
         </div>
