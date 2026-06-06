@@ -1,19 +1,33 @@
-import { type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/proxy'
 
 export async function proxy(request: NextRequest) {
-  return await updateSession(request)
+  const { pathname } = request.nextUrl
+
+  const response = await updateSession(request)
+
+  if (pathname.startsWith('/dashboard')) {
+    if (pathname === '/dashboard/login') return response
+
+    const sessionCookie =
+      request.cookies.get('sb-access-token') ??
+      request.cookies.get('sb-refresh-token') ??
+      [...request.cookies.getAll()].find((c) =>
+        c.name.startsWith('sb-') && c.name.endsWith('-auth-token')
+      )
+
+    if (!sessionCookie) {
+      const loginUrl = new URL('/dashboard/login', request.url)
+      loginUrl.searchParams.set('redirected', '1')
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+
+  return response
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico
-     * - public image files
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
