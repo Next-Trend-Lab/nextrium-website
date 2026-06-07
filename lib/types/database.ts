@@ -135,6 +135,7 @@ export type Database = {
           is_hub_event: boolean
           cover_color: string
           cover_image_url: string | null
+          youtube_url: string | null
           created_at: string
           updated_at: string
         }
@@ -151,6 +152,7 @@ export type Database = {
           is_hub_event?: boolean
           cover_color?: string
           cover_image_url?: string | null
+          youtube_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -166,6 +168,7 @@ export type Database = {
           is_hub_event?: boolean
           cover_color?: string
           cover_image_url?: string | null
+          youtube_url?: string | null
           updated_at?: string
         }
       }

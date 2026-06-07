@@ -46,6 +46,7 @@ export default function EventEditor({ event }: EventEditorProps) {
   const [isHubEvent,  setIsHubEvent]  = useState(event?.is_hub_event       ?? true)
   const [coverColor,  setCoverColor]  = useState(event?.cover_color        ?? '#DB6727')
   const [coverImage,  setCoverImage]  = useState(event?.cover_image_url    ?? '')
+  const [youtubeUrl,  setYoutubeUrl]  = useState(event?.youtube_url        ?? '')
 
   const [saving,   setSaving]   = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -76,6 +77,7 @@ export default function EventEditor({ event }: EventEditorProps) {
       is_hub_event:    isHubEvent,
       cover_color:     coverColor,
       cover_image_url: coverImage.trim() || null,
+      youtube_url:     youtubeUrl.trim() || null,
       updated_at:      now,
     }
 
@@ -209,15 +211,7 @@ export default function EventEditor({ event }: EventEditorProps) {
                 value={location} onChange={(e) => setLocation(e.target.value)} />
             </div>
 
-            <div className="editor-field">
-              <label className="editor-label">Cover image</label>
-              <CoverImageUpload
-                value={coverImage}
-                onChange={setCoverImage}
-                folder="events"
-              />
             </div>
-          </div>
 
           <div className="event-editor-sidebar">
             <div className="editor-panel">
@@ -251,6 +245,34 @@ export default function EventEditor({ event }: EventEditorProps) {
                   <input type="checkbox" checked={isHubEvent} onChange={(e) => setIsHubEvent(e.target.checked)} />
                   <span className="editor-toggle-track" />
                 </label>
+              </div>
+            </div>
+
+            <div className="editor-panel">
+              <div className="editor-panel-title">Cover media</div>
+
+              <div className="editor-field">
+                <label className="editor-label">Cover image</label>
+                <CoverImageUpload
+                  value={coverImage}
+                  onChange={setCoverImage}
+                  folder="events"
+                />
+              </div>
+
+              <div className="editor-field">
+                <label className="editor-label" htmlFor="youtube_url">YouTube video URL</label>
+                <input
+                  className="editor-input"
+                  id="youtube_url"
+                  type="url"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                />
+                <span style={{ fontSize: '11px', color: 'var(--grey-dark)' }}>
+                  If set, the video will be used as the event cover instead of the image.
+                </span>
               </div>
             </div>
 
