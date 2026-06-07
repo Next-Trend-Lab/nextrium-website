@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import Header from '@/components/dashboard/Header'
 import Link from 'next/link'
 import type { Role } from '@/lib/types/database'
@@ -13,7 +13,7 @@ const TYPE_LABELS: Record<Role['type'], string> = {
 }
 
 async function getRoles(): Promise<Role[]> {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const { data } = await supabase
     .from('roles')
     .select('*')

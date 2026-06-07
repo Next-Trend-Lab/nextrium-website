@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import Header from '@/components/dashboard/Header'
 import ContactClient from './ContactClient'
 import type { ContactSubmission } from '@/lib/types/database'
@@ -6,7 +6,7 @@ import type { ContactSubmission } from '@/lib/types/database'
 export const metadata = { title: 'Contact' }
 
 async function getSubmissions(): Promise<ContactSubmission[]> {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   const { data } = await supabase
     .from('contact_submissions')
     .select('*')

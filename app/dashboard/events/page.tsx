@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import Header from '@/components/dashboard/Header'
 import Link from 'next/link'
 import type { NTEvent } from '@/lib/types/database'
@@ -21,7 +21,7 @@ const STATUS_STYLES: Record<NTEvent['status'], { bg: string; color: string }> = 
 }
 
 async function getEvents(): Promise<NTEvent[]> {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const { data } = await supabase
     .from('events')
     .select('*')

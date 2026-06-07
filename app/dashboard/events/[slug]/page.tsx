@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import EventEditor from './EventEditor'
 import type { NTEvent } from '@/lib/types/database'
 
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function EventEditorPage({ params }: Props) {
   const { slug }  = await params
-  const supabase  = await createClient()
+  const supabase  = createServiceClient()
   let event: NTEvent | null = null
 
   if (slug !== 'new') {

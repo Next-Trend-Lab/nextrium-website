@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import Header from '@/components/dashboard/Header'
 import ApplicationsClient from './ApplicationsClient'
 import type { Application } from '@/lib/types/database'
@@ -6,7 +6,7 @@ import type { Application } from '@/lib/types/database'
 export const metadata = { title: 'Applications' }
 
 async function getApplications(): Promise<Application[]> {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const { data } = await supabase
     .from('applications')
     .select('*')

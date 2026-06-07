@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import Header from '@/components/dashboard/Header'
 import Link from 'next/link'
 import type { Post } from '@/lib/types/database'
@@ -24,7 +24,7 @@ const TYPE_STYLES: Record<Post['post_type'], { bg: string; color: string }> = {
 }
 
 async function getPosts(): Promise<Post[]> {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const { data } = await supabase
     .from('posts')
     .select('*')

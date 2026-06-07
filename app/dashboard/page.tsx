@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import Header from '@/components/dashboard/Header'
 import Link from 'next/link'
 import type { Post, Application } from '@/lib/types/database'
 
 async function getStats() {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const [products, posts, events, applications, contacts] = await Promise.all([
     supabase.from('products').select('id', { count: 'exact', head: true }),
     supabase.from('posts').select('id', { count: 'exact', head: true }).eq('is_published', true),
@@ -23,7 +23,7 @@ async function getStats() {
 }
 
 async function getRecentPosts(): Promise<Pick<Post, 'slug' | 'title' | 'post_type' | 'published_at' | 'is_published'>[]> {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const { data } = await supabase
     .from('posts')
     .select('slug, title, post_type, published_at, is_published')
@@ -33,7 +33,7 @@ async function getRecentPosts(): Promise<Pick<Post, 'slug' | 'title' | 'post_typ
 }
 
 async function getRecentApplications(): Promise<Pick<Application, 'id' | 'name' | 'email' | 'role_title' | 'status' | 'created_at'>[]> {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const { data } = await supabase
     .from('applications')
     .select('id, name, email, role_title, status, created_at')

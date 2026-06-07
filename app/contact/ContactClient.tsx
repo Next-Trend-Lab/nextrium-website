@@ -26,12 +26,33 @@ export default function ContactClient() {
   const [subject, setSubject] = useState<Subject>('general')
   const [formState, setFormState] = useState<FormState>('idle')
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     setFormState('submitting')
-    // Phase 2: wire to Supabase / Brevo API route
-    await new Promise((res) => setTimeout(res, 1200))
-    setFormState('success')
+
+    const form = e.currentTarget
+    const data = {
+      first_name:   (form.elements.namedItem('first_name')   as HTMLInputElement)?.value ?? '',
+      last_name:    (form.elements.namedItem('last_name')    as HTMLInputElement)?.value ?? '',
+      email:        (form.elements.namedItem('email')        as HTMLInputElement)?.value ?? '',
+      organisation: (form.elements.namedItem('organisation') as HTMLInputElement)?.value ?? '',
+      message:      (form.elements.namedItem('message')      as HTMLTextAreaElement)?.value ?? '',
+      subject_type: subject,
+    }
+
+    try {
+      const res = await fetch('/api/contact', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(data),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Something went wrong.')
+      setFormState('success')
+    } catch (err) {
+      setFormState('error')
+      console.error(err)
+    }
   }
 
   return (
@@ -157,40 +178,56 @@ export default function ContactClient() {
         }
         .form-submit:hover:not(:disabled) { background: var(--orange-f); }
         .form-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-        .contact-success {
-          display: flex; flex-direction: column; gap: 20px;
-          padding: 48px 40px;
-          background: var(--navy-deep); border: 1px solid rgba(255,255,255,0.06);
+        .success-overlay {
+          position: fixed; inset: 0; z-index: 200;
+          background: rgba(7,22,40,0.92);
+          backdrop-filter: blur(8px);
+          display: flex; align-items: center; justify-content: center;
+          padding: 24px;
+          animation: fadeIn 0.3s ease;
+        }
+        .success-modal {
+          background: var(--navy);
+          border: 1px solid rgba(255,255,255,0.08);
+          padding: 56px 48px;
+          max-width: 480px; width: 100%;
           position: relative; overflow: hidden;
-          animation: fadeIn 0.5s ease both;
+          animation: fadeUp 0.4s ease both;
         }
-        .contact-success-grid {
-          position: absolute; inset: 0; pointer-events: none; opacity: 0.03;
-          background-image:
-            linear-gradient(rgba(255,255,255,1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px);
-          background-size: 48px 48px;
-        }
-        .contact-success-corner-tl {
-          position: absolute; top: -1px; left: -1px; width: 16px; height: 16px;
+        .success-modal-corner-tl {
+          position: absolute; top: -1px; left: -1px;
+          width: 20px; height: 20px;
           border-top: 2px solid var(--orange); border-left: 2px solid var(--orange);
         }
-        .contact-success-corner-br {
-          position: absolute; bottom: -1px; right: -1px; width: 16px; height: 16px;
+        .success-modal-corner-br {
+          position: absolute; bottom: -1px; right: -1px;
+          width: 20px; height: 20px;
           border-bottom: 2px solid var(--orange); border-right: 2px solid var(--orange);
         }
-        .contact-success-inner { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 16px; }
-        .contact-success-icon {
-          width: 48px; height: 48px; border-radius: 2px;
+        .success-modal-icon {
+          width: 56px; height: 56px;
           background: rgba(34,193,122,0.1); border: 1px solid rgba(34,193,122,0.2);
           display: flex; align-items: center; justify-content: center;
-          font-size: 20px; color: var(--success);
+          font-size: 24px; color: var(--success); margin-bottom: 24px;
         }
-        .contact-success-title {
+        .success-modal-title {
           font-family: var(--font-exo2); font-weight: 800;
-          font-size: 28px; color: var(--white); letter-spacing: -0.5px;
+          font-size: 32px; color: var(--white);
+          letter-spacing: -1px; line-height: 1.05; margin-bottom: 16px;
         }
-        .contact-success-desc { font-size: 15px; color: var(--grey-mid); line-height: 1.75; }
+        .success-modal-desc {
+          font-size: 15px; color: var(--grey-mid);
+          line-height: 1.75; margin-bottom: 32px;
+        }
+        .success-modal-close {
+          font-family: var(--font-mono); font-size: 9px;
+          letter-spacing: 0.15em; text-transform: uppercase;
+          padding: 12px 24px; background: var(--orange);
+          border: 1px solid var(--orange); color: var(--white);
+          cursor: pointer; transition: background 0.15s ease;
+          display: inline-flex; align-items: center; gap: 8px;
+        }
+        .success-modal-close:hover { background: var(--orange-f, #C4521A); }
         .other-ways-section { background: var(--navy); padding: var(--section-py) 0; }
         .other-ways-grid {
           display: grid; grid-template-columns: repeat(3, 1fr);
@@ -302,54 +339,39 @@ export default function ContactClient() {
             </div>
 
             <div>
-              {formState === 'success' ? (
-                <div className="contact-success">
-                  <div className="contact-success-grid" />
-                  <div className="contact-success-corner-tl" />
-                  <div className="contact-success-corner-br" />
-                  <div className="contact-success-inner">
-                    <div className="contact-success-icon">✓</div>
-                    <div className="contact-success-title">Message received.</div>
-                    <p className="contact-success-desc">
-                      We will get back to you within two business days. In the meantime, feel free to explore our products or follow what we are building.
-                    </p>
+              <form className="contact-form" onSubmit={handleSubmit} noValidate>
+                <input type="hidden" name="subject_type" value={subject} />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="first_name">First name</label>
+                    <input className="form-input" id="first_name" name="first_name" type="text" placeholder="First name" required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="last_name">Last name</label>
+                    <input className="form-input" id="last_name" name="last_name" type="text" placeholder="Last name" required />
                   </div>
                 </div>
-              ) : (
-                <form className="contact-form" onSubmit={handleSubmit} noValidate>
-                  <input type="hidden" name="subject_type" value={subject} />
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="first_name">First name</label>
-                      <input className="form-input" id="first_name" name="first_name" type="text" placeholder="First name" required />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="last_name">Last name</label>
-                      <input className="form-input" id="last_name" name="last_name" type="text" placeholder="Last name" required />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="email">Email address</label>
-                    <input className="form-input" id="email" name="email" type="email" placeholder="your@email.com" required />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="organisation">Organisation (optional)</label>
-                    <input className="form-input" id="organisation" name="organisation" type="text" placeholder="Company or project name" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="message">Message</label>
-                    <textarea
-                      className="form-input form-textarea" id="message" name="message"
-                      placeholder="Tell us what you are building or what you need. The more detail, the better."
-                      required
-                    />
-                  </div>
-                  <button type="submit" className="form-submit" disabled={formState === 'submitting'}>
-                    <span>{formState === 'submitting' ? 'Sending...' : 'Send message'}</span>
-                    <span>{formState === 'submitting' ? '...' : '→'}</span>
-                  </button>
-                </form>
-              )}
+                <div className="form-group">
+                  <label className="form-label" htmlFor="email">Email address</label>
+                  <input className="form-input" id="email" name="email" type="email" placeholder="your@email.com" required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="organisation">Organisation (optional)</label>
+                  <input className="form-input" id="organisation" name="organisation" type="text" placeholder="Company or project name" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="message">Message</label>
+                  <textarea
+                    className="form-input form-textarea" id="message" name="message"
+                    placeholder="Tell us what you are building or what you need. The more detail, the better."
+                    required
+                  />
+                </div>
+                <button type="submit" className="form-submit" disabled={formState === 'submitting'}>
+                  <span>{formState === 'submitting' ? 'Sending...' : formState === 'error' ? 'Try again' : 'Send message'}</span>
+                  <span>{formState === 'submitting' ? '...' : '→'}</span>
+                </button>
+              </form>
             </div>
           </div>
         </div>
@@ -391,6 +413,28 @@ export default function ContactClient() {
           </div>
         </div>
       </section>
+
+      {formState === 'success' && (
+        <div className="success-overlay" onClick={() => setFormState('idle')}>
+          <div className="success-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="success-modal-corner-tl" />
+            <div className="success-modal-corner-br" />
+            <div className="success-modal-icon">✓</div>
+            <div className="success-modal-title">Message received.</div>
+            <p className="success-modal-desc">
+              We will get back to you within two business days. No automated replies — a real person reads every message.
+            </p>
+            <button
+              type="button"
+              className="success-modal-close"
+              onClick={() => setFormState('idle')}
+            >
+              <span>Close</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+      )}
     </>
   )
 }

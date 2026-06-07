@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import RoleEditor from './RoleEditor'
 import type { Role } from '@/lib/types/database'
 
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function RoleEditorPage({ params }: Props) {
   const { slug }  = await params
-  const supabase  = await createClient()
+  const supabase  = createServiceClient()
   let role: Role | null = null
 
   if (slug !== 'new') {
