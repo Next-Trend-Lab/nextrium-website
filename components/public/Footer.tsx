@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import Wordmark from '@/components/shared/Wordmark'
 
 const FOOTER_LINKS = {
   Company: [
@@ -96,10 +95,28 @@ export default function Footer() {
         <div className="container">
           <div className="footer-grid">
             <div>
-              <Link href="/" aria-label="NexTrium home">
-                <Wordmark size="sm" variant="dark" />
+              <Link href="/" aria-label="NexTrium home" style={{ textDecoration: 'none' }}>
+                <span style={{
+                  fontFamily: 'var(--font-exo2)',
+                  fontWeight: 900,
+                  fontSize: '18px',
+                  letterSpacing: '-0.3px',
+                  color: 'var(--off-white)',
+                }}>
+                  Nex<span style={{ color: 'var(--orange)' }}>T</span>rium
+                </span>
+                <span style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '9px',
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  color: 'var(--grey-mid)',
+                  display: 'block',
+                  marginTop: '4px',
+                }}>
+                  Innovation. Incubation. Impact.
+                </span>
               </Link>
-              <p className="footer-tagline">Innovation. Incubation. Impact.</p>
               <address className="footer-rc" style={{ fontStyle: 'normal' }}>
                 NexTrium Global Innovations Ltd<br />
                 RC: 9506507<br />

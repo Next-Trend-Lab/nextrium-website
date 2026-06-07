@@ -584,7 +584,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="hub-cta">
-                <CTABox href="/hub" label="See all events" variant="dark" />
+                <CTABox href="/events" label="See all events" variant="dark" />
               </div>
             </div>
             <div>

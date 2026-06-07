@@ -5,11 +5,13 @@ import { useState } from 'react'
 import Wordmark from '@/components/shared/Wordmark'
 
 const NAV_LINKS = [
-  { label: 'What we build', href: '/#builds'  },
-  { label: 'Services',      href: '/services' },
-  { label: 'Hub',           href: '/hub'      },
-  { label: 'Blog',          href: '/blog'     },
-  { label: 'About',         href: '/about'    },
+  { label: 'Products', href: '/products' },
+  { label: 'Services', href: '/services' },
+  { label: 'Events',   href: '/events'   },
+  { label: 'Hub',      href: '/hub'      },
+  { label: 'Blog',     href: '/blog'     },
+  { label: 'About',    href: '/about'    },
+  { label: 'Careers',  href: '/careers'  },
 ]
 
 export default function Navbar() {
