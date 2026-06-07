@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   try {
@@ -11,8 +11,8 @@ export async function POST(request: Request) {
     if (!email?.trim())      return NextResponse.json({ error: 'Email is required.' },       { status: 400 })
     if (!message?.trim())    return NextResponse.json({ error: 'Message is required.' },     { status: 400 })
 
-    const supabase = await createClient()
-    const { error: dbError } = await supabase.from('contact_submissions').insert({
+    const supabase = createServiceClient()
+    const { error: dbError } = await (supabase.from('contact_submissions') as any).insert({
       first_name:   first_name.trim(),
       last_name:    last_name.trim(),
       email:        email.trim(),
