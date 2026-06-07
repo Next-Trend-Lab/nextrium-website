@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Header from '@/components/dashboard/Header'
+import CoverImageUpload from '@/components/dashboard/CoverImageUpload'
 import type { Product } from '@/lib/types/database'
 
 interface ProductEditorProps {
@@ -239,11 +240,11 @@ export default function ProductEditor({ product }: ProductEditorProps) {
             </div>
 
             <div className="editor-field">
-              <label className="editor-label" htmlFor="cover_image">Cover image URL</label>
-              <input
-                className="editor-input" id="cover_image" type="url"
-                placeholder="https://..."
-                value={coverImage} onChange={(e) => setCoverImage(e.target.value)}
+              <label className="editor-label">Cover image</label>
+              <CoverImageUpload
+                value={coverImage}
+                onChange={setCoverImage}
+                folder="products"
               />
             </div>
           </div>

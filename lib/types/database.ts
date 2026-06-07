@@ -179,6 +179,7 @@ export type Database = {
           post_type: 'editorial' | 'announcement' | 'product_update' | 'event_recap' | 'research' | 'recruitment'
           tags: string[]
           author: string
+          author_id: string | null
           cover_image_url: string | null
           is_published: boolean
           published_at: string | null
@@ -194,6 +195,7 @@ export type Database = {
           post_type?: 'editorial' | 'announcement' | 'product_update' | 'event_recap' | 'research' | 'recruitment'
           tags?: string[]
           author: string
+          author_id?: string | null
           cover_image_url?: string | null
           is_published?: boolean
           published_at?: string | null
@@ -208,6 +210,7 @@ export type Database = {
           post_type?: 'editorial' | 'announcement' | 'product_update' | 'event_recap' | 'research' | 'recruitment'
           tags?: string[]
           author?: string
+          author_id?: string | null
           cover_image_url?: string | null
           is_published?: boolean
           published_at?: string | null

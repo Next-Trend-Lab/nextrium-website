@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Header from '@/components/dashboard/Header'
+import CoverImageUpload from '@/components/dashboard/CoverImageUpload'
 import RichTextEditor from '@/components/editor/RichTextEditor'
 import type { Post } from '@/lib/types/database'
 
@@ -247,16 +248,11 @@ export default function PostEditor({ post }: PostEditorProps) {
 
             <div className="editor-panel">
               <div className="editor-panel-title">Cover image</div>
-              <div className="editor-field">
-                <label className="editor-label" htmlFor="cover_image">Image URL</label>
-                <input className="editor-input" id="cover_image" type="url"
-                  placeholder="https://..."
-                  value={coverImage} onChange={(e) => setCoverImage(e.target.value)} />
-              </div>
-              {coverImage && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={coverImage} alt="Cover preview" className="editor-cover-preview" />
-              )}
+              <CoverImageUpload
+                value={coverImage}
+                onChange={setCoverImage}
+                folder="posts"
+              />
             </div>
 
             {!isNew && (
