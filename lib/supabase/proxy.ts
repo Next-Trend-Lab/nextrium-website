@@ -26,8 +26,7 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Refresh session — do not add logic between createServerClient and getClaims
-  await supabase.auth.getClaims()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  return supabaseResponse
+  return { response: supabaseResponse, user }
 }
