@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/dashboard/Header'
 import Link from 'next/link'
@@ -42,6 +43,10 @@ async function getRecentApplications(): Promise<Pick<Application, 'id' | 'name' 
 }
 
 export default async function DashboardPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/dashboard/login')
+
   const [stats, recentPosts, recentApplications] = await Promise.all([
     getStats(),
     getRecentPosts(),
