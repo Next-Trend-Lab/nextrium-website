@@ -180,7 +180,14 @@ export default async function DashboardPage() {
               ) : (
                 recentPosts.map((post) => (
                   <Link key={post.slug} href={`/dashboard/posts/${post.slug}`} className="dash-row">
-                    <span className="dash-row-title">{post.title}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="dash-row-title">{post.title}</div>
+                      <div className="dash-row-meta">
+                        {post.published_at
+                          ? new Date(post.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                          : 'Draft'}
+                      </div>
+                    </div>
                     <span className={`dash-badge ${post.is_published ? 'badge-published' : 'badge-draft'}`}>
                       {post.is_published ? 'Published' : 'Draft'}
                     </span>
@@ -203,7 +210,9 @@ export default async function DashboardPage() {
                   <div key={app.id} className="dash-row">
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="dash-row-title">{app.name}</div>
-                      <div className="dash-row-meta">{app.role_title ?? 'Open application'}</div>
+                      <div className="dash-row-meta">
+                        {app.role_title ?? 'Open application'} · {new Date(app.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </div>
                     </div>
                     <span className={`dash-badge badge-${app.status}`}>{app.status}</span>
                   </div>

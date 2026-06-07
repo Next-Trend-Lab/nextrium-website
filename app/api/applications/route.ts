@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const { error: dbError } = await supabase.from('applications').insert({
+    const { error: dbError } = await (supabase.from('applications') as any).insert({
       name:       name.trim(),
       email:      email.trim(),
       role_id:    role_id    || null,

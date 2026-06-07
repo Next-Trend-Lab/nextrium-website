@@ -82,6 +82,7 @@ export default async function EventsPage() {
                     <th>Date</th>
                     <th>Location</th>
                     <th>Hub</th>
+                    <th>Updated</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -105,6 +106,9 @@ export default async function EventsPage() {
                         <td style={{ fontSize: '11px', color: 'var(--grey-mid)' }}>{event.location}</td>
                         <td>
                           {event.is_hub_event && <span className="dash-badge badge-hub">Hub</span>}
+                        </td>
+                        <td style={{ fontSize: '11px', color: 'var(--grey-mid)', whiteSpace: 'nowrap' }}>
+                          {new Date(event.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </td>
                         <td>
                           <Link href={`/dashboard/events/${event.slug}`} className="dash-edit-link">Edit →</Link>

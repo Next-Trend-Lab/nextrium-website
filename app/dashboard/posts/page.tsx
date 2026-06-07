@@ -117,10 +117,15 @@ export default async function PostsPage() {
                             {post.is_published ? 'Published' : 'Draft'}
                           </span>
                         </td>
-                        <td style={{ color: 'var(--grey-mid)', fontSize: '12px' }}>
-                          {post.published_at
-                            ? new Date(post.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                            : '—'}
+                        <td style={{ fontSize: '12px' }}>
+                          <div style={{ color: 'var(--grey-mid)' }}>
+                            {post.published_at
+                              ? new Date(post.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                              : '—'}
+                          </div>
+                          <div style={{ color: 'var(--grey-dark)', fontSize: '11px', marginTop: '2px' }}>
+                            Updated {new Date(post.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </div>
                         </td>
                         <td>
                           <Link href={`/dashboard/posts/${post.slug}`} className="dash-edit-link">Edit →</Link>

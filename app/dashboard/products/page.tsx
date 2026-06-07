@@ -82,6 +82,7 @@ export default async function ProductsPage() {
                     <th>Category</th>
                     <th>Color</th>
                     <th>Featured</th>
+                    <th>Updated</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -106,6 +107,9 @@ export default async function ProductsPage() {
                         </td>
                         <td>
                           {product.is_featured && <span className="dash-badge badge-featured">Featured</span>}
+                        </td>
+                        <td style={{ fontSize: '11px', color: 'var(--grey-mid)', whiteSpace: 'nowrap' }}>
+                          {new Date(product.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </td>
                         <td>
                           <Link href={`/dashboard/products/${product.slug}`} className="dash-edit-link">Edit →</Link>
