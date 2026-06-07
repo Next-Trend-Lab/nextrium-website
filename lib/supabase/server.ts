@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import type { Database } from '@/lib/types/database'
 
@@ -28,11 +29,14 @@ export async function createClient() {
 }
 
 export function createServiceClient() {
-  return createServerClient<Database>(
+  return createSupabaseClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SECRET_KEY!,
     {
-      cookies: { getAll: () => [], setAll: () => {} },
+      auth: {
+        autoRefreshToken: false,
+        persistSession:   false,
+      },
     }
   )
 }
