@@ -26,8 +26,7 @@ export default function ApplicationsClient({ applications: initial }: Applicatio
   async function updateStatus(id: string, status: Application['status']) {
     setUpdating(true)
     const supabase = createClient()
-    const { error } = await supabase
-      .from('applications')
+    const { error } = await (supabase.from('applications') as any)
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id)
     if (!error) {

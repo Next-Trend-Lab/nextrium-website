@@ -33,7 +33,7 @@ export default function ContactClient({ submissions: initial }: ContactClientPro
   async function updateStatus(id: string, status: ContactSubmission['status']) {
     setUpdating(true)
     const supabase = createClient()
-    const { error } = await supabase.from('contact_submissions').update({ status }).eq('id', id)
+    const { error } = await (supabase.from('contact_submissions') as any).update({ status }).eq('id', id)
     if (!error) {
       setSubmissions((prev) => prev.map((s) => s.id === id ? { ...s, status } : s))
       if (selected?.id === id) setSelected((prev) => prev ? { ...prev, status } : null)
