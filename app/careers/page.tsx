@@ -3,6 +3,7 @@ import Footer from '@/components/public/Footer'
 import SectionTag from '@/components/shared/SectionTag'
 import CTABox from '@/components/ui/CTABox'
 import Link from 'next/link'
+import CareersApplicationForm from './CareersApplicationForm'
 
 export const metadata = {
   title: 'Careers',
@@ -317,28 +318,7 @@ export default function CareersPage() {
                 We keep a file of strong candidates. If your background fits something we are building toward, we will reach out. Tell us who you are and what you do best.
               </p>
             </div>
-            <form className="open-app-form" action="/api/applications" method="POST">
-              <div className="form-group">
-                <label className="form-label" htmlFor="name">Full name</label>
-                <input className="form-input" id="name" name="name" type="text" placeholder="Your full name" required />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="email">Email address</label>
-                <input className="form-input" id="email" name="email" type="email" placeholder="your@email.com" required />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="role">What you do</label>
-                <input className="form-input" id="role" name="role" type="text" placeholder="e.g. Full-stack developer, Product designer" required />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="message">Why NexTrium</label>
-                <textarea className="form-input form-textarea" id="message" name="message" placeholder="Tell us what you are working on and why you want to build with us." required />
-              </div>
-              <button type="submit" className="form-submit">
-                <span>Send application</span>
-                <span>→</span>
-              </button>
-            </form>
+            <CareersApplicationForm />
           </div>
         </div>
       </section>

@@ -4,6 +4,7 @@ import Navbar from '@/components/public/Navbar'
 import Footer from '@/components/public/Footer'
 import SectionTag from '@/components/shared/SectionTag'
 import { ALL_ROLES } from '../page'
+import CareersApplicationForm from '../CareersApplicationForm'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -246,29 +247,7 @@ export default async function RolePage({ params }: Props) {
                 Fill in the form and attach your CV. We read every application and respond to everyone within two weeks.
               </p>
             </div>
-            <form className="apply-form" action="/api/applications" method="POST">
-              <input type="hidden" name="role_id" value={role.slug} />
-              <div className="form-group">
-                <label className="form-label" htmlFor="name">Full name</label>
-                <input className="form-input" id="name" name="name" type="text" placeholder="Your full name" required />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="email">Email address</label>
-                <input className="form-input" id="email" name="email" type="email" placeholder="your@email.com" required />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="cover_note">Cover note</label>
-                <textarea className="form-input form-textarea" id="cover_note" name="cover_note" placeholder="Tell us why you are the right person for this role." required />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="cv">CV / Resume</label>
-                <input className="form-file" id="cv" name="cv" type="file" accept=".pdf,.doc,.docx" required />
-              </div>
-              <button type="submit" className="form-submit">
-                <span>Submit application</span>
-                <span>→</span>
-              </button>
-            </form>
+            <CareersApplicationForm roleId={role.slug} />
           </div>
         </div>
       </section>

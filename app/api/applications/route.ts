@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   try {
@@ -31,6 +31,14 @@ export async function POST(request: Request) {
           cv_url = data.publicUrl
         }
       }
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
+      const text   = await request.text()
+      const params = new URLSearchParams(text)
+      name       = params.get('name')       ?? ''
+      email      = params.get('email')      ?? ''
+      role_id    = params.get('role_id')    ?? ''
+      role_title = params.get('role_title') ?? ''
+      cover_note = params.get('cover_note') ?? ''
     } else {
       const body = await request.json()
       name       = body.name       ?? ''
@@ -43,15 +51,28 @@ export async function POST(request: Request) {
     if (!name.trim())  return NextResponse.json({ error: 'Name is required.' },  { status: 400 })
     if (!email.trim()) return NextResponse.json({ error: 'Email is required.' }, { status: 400 })
 
-    const supabase = await createServiceClient()
+    const supabase = createServiceClient()
 
     if (role_id && !role_title) {
       const { data: role } = await supabase.from('roles').select('title').eq('slug', role_id).single()
-      if (role) role_title = role.title
+      if (role && 'title' in role) role_title = (role as { title: string }).title
     }
 
-    const publicClient = await createClient()
-    const { error: dbError } = await publicClient.from('applications').insert({
+    const { data: existing } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('email', email.trim())
+      .eq('role_id', role_id || '')
+      .maybeSingle()
+
+    if (existing) {
+      return NextResponse.json(
+        { error: 'You have already submitted an application for this position.' },
+        { status: 409 }
+      )
+    }
+
+    const { error: dbError } = await supabase.from('applications').insert({
       name:       name.trim(),
       email:      email.trim(),
       role_id:    role_id    || null,
@@ -117,6 +138,41 @@ export async function POST(request: Request) {
       const brevoError = await brevoRes.json()
       console.error('Brevo error:', brevoError)
     }
+
+    // Send confirmation email to applicant
+    await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key':      process.env.BREVO_API_KEY!,
+      },
+      body: JSON.stringify({
+        sender:  { name: 'NexTrium', email: process.env.BREVO_SENDER_EMAIL! },
+        to:      [{ email: email.trim(), name: name.trim() }],
+        subject: `We received your application${role_title ? ` — ${role_title}` : ''} | NexTrium`,
+        htmlContent: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background: #071628; color: #F5F6F8;">
+            <div style="border-bottom: 2px solid #DB6727; padding-bottom: 16px; margin-bottom: 24px;">
+              <h2 style="margin: 0; font-size: 20px; color: #ffffff;">Application received.</h2>
+              <p style="margin: 4px 0 0; font-size: 12px; color: #8A9BB0; text-transform: uppercase; letter-spacing: 0.1em;">${role_title || 'Open application'}</p>
+            </div>
+            <p style="font-size: 15px; color: #F5F6F8; line-height: 1.7; margin-bottom: 16px;">Hi ${name.trim()},</p>
+            <p style="font-size: 15px; color: #8A9BB0; line-height: 1.7; margin-bottom: 24px;">
+              Thank you for applying${role_title ? ` for the ${role_title} position` : ''} at NexTrium. We have received your application and will review it carefully.
+            </p>
+            <p style="font-size: 15px; color: #8A9BB0; line-height: 1.7; margin-bottom: 32px;">
+              We read every application and respond to everyone within two weeks. If your background is a strong fit, we will be in touch to discuss next steps.
+            </p>
+            <div style="background: #0D233D; padding: 20px; border-left: 3px solid #DB6727; margin-bottom: 32px;">
+              <p style="margin: 0; font-size: 13px; color: #8A9BB0; line-height: 1.7;">
+                In the meantime, explore what we are building at <a href="https://nextrium.org" style="color: #DB6727;">nextrium.org</a>
+              </p>
+            </div>
+            <p style="font-size: 13px; color: #2E3F54;">NexTrium Global Innovations Ltd · Lagos, Nigeria</p>
+          </div>
+        `,
+      }),
+    })
 
     return NextResponse.json({ success: true })
   } catch (err) {
