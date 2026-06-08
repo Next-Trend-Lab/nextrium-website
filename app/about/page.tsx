@@ -38,8 +38,9 @@ const VALUES = [
 
 const AFFILIATIONS = [
   { name: 'Cardano', role: 'On-chain governance participant and community organiser' },
-  { name: 'SingularityNET / ASI Alliance', role: 'Protocol Officer, DEEP Funding ecosystem' },
-  { name: 'DEEP Projects', role: 'Ideation and community reviewer' },
+  { name: 'Wada', role: 'Hub partner and community collaborator' },
+  { name: 'SingularityNET / ASI Alliance', role: 'DEEP Funding ecosystem contributor' },
+  { name: 'DEEP Projects', role: 'Marketing coordinator and community contributor. Grant recipient for research on integrating IoT with decentralised AI.' },
   { name: 'Intersect MBO', role: 'Member and DRep workshop organiser' },
 ]
 
@@ -49,23 +50,25 @@ const TEAM = [
     role: 'Founder and Director',
     bio: 'The infrastructure for trust does not yet exist where it is needed most. We are building it.',
     detail: 'Full-stack developer, Web3 builder, and community architect. Background in Mathematics Education from the University of Lagos. Building NexTrium from Lagos with a focus on economic inclusion and informal economy infrastructure.',
+    photo: 'https://rcuqsnehquhyzxujeqsl.supabase.co/storage/v1/object/public/media/Gemini_Generated_Image_n3r7pxn3r7pxn3r7.png',
     email: 'abdulbasit@nextrium.org',
     social: {
       github:   'https://github.com/devbasrahtop',
-      linkedin: '#',
-      twitter:  '#',
+      linkedin: 'https://www.linkedin.com/in/devbasrahtop/',
+      twitter:  'https://x.com/basrahtop',
     },
   },
   {
     name: 'Aanuoluwapo Ayomide Osemene',
     role: 'Co-Director',
     bio: 'Great communities do not happen by accident. They are organised, nurtured, and sustained by people who show up.',
-    detail: 'Core team member and co-director at NexTrium. Active contributor to the NexTrend Hub community and key organiser of the Cardano Africa Tech Summit Hackathon.',
+    detail: 'Product Manager, Educationist, and digital literacy advocate. Co-founder of NexTrend Group and Co-Director at NexTrium, where she focuses on building solutions to societal problems across Nigeria and Africa through blockchain and AI. Passionate about making technology accessible and impactful at the community level.',
+    photo: 'https://rcuqsnehquhyzxujeqsl.supabase.co/storage/v1/object/public/media/ayomi.png',
     email: '',
     social: {
       github:   '#',
-      linkedin: '#',
-      twitter:  '#',
+      linkedin: 'https://linkedin.com/in/ayomishuga',
+      twitter:  'https://x.com/shugaayomi',
     },
   },
 ]
@@ -214,13 +217,14 @@ export default function AboutPage() {
         .team-grid { display: flex; flex-direction: column; gap: 2px; }
         .team-card {
           display: grid; grid-template-columns: 1fr 1fr;
-          min-height: 520px; position: relative; overflow: hidden;
+          height: 520px; position: relative; overflow: hidden;
         }
         .team-card-photo {
           position: relative; overflow: hidden; background: var(--navy-mid);
+          max-height: 520px;
         }
         .team-card-photo img {
-          width: 100%; height: 100%;
+          width: 100%; height: 100%; max-height: 520px;
           object-fit: cover; object-position: center top; display: block;
         }
         .team-card-photo-placeholder {
@@ -462,9 +466,14 @@ export default function AboutPage() {
             {TEAM.map((member) => (
               <div key={member.name} className="team-card">
                 <div className="team-card-photo">
-                  <div className="team-card-photo-placeholder">
-                    {member.name.charAt(0)}
-                  </div>
+                  {member.photo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={member.photo} alt={member.name} />
+                  ) : (
+                    <div className="team-card-photo-placeholder">
+                      {member.name.charAt(0)}
+                    </div>
+                  )}
                 </div>
                 <div className="team-card-body">
                   <div className="team-card-pattern"><span /></div>
