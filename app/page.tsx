@@ -5,21 +5,12 @@ import CTABox from '@/components/ui/CTABox'
 import SectionTag from '@/components/shared/SectionTag'
 import NTMark from '@/components/shared/NTMark'
 import { createServiceClient } from '@/lib/supabase/server'
-import type { Product } from '@/lib/types/database'
+import type { Product, NTEvent, Post } from '@/lib/types/database'
 
 interface Service {
   num: string
   name: string
   description: string
-}
-
-interface Post {
-  slug: string
-  title: string
-  excerpt: string
-  post_type: string
-  published_at: string
-  author: string
 }
 
 const SERVICES: Service[] = [
@@ -31,33 +22,6 @@ const SERVICES: Service[] = [
   { num: '06', name: 'Strategic Partnerships',     description: 'Connecting organisations to the right ecosystem, tools, and capital.' },
 ]
 
-const POSTS: Post[] = [
-  {
-    slug: 'zivana-protocol-update',
-    title: "Zivana Protocol: Trust Infrastructure for Africa's Informal Economy",
-    excerpt: 'How we are building an open Layer 2 protocol that makes invisible capability visible to capital providers.',
-    post_type: 'Product Update',
-    published_at: '06.2026',
-    author: 'Abdulbasit Abdulrahman',
-  },
-  {
-    slug: 'nextrium-incorporated',
-    title: 'NexTrium is Now an Officially Registered Company in Nigeria',
-    excerpt: 'We received our CAC registration certificate. RC: 9506507. Here is what it means and what comes next.',
-    post_type: 'Announcement',
-    published_at: '04.2026',
-    author: 'Abdulbasit Abdulrahman',
-  },
-  {
-    slug: 'cats-hackathon-recap',
-    title: 'CATS Hackathon: What the Teams Built and What We Learned',
-    excerpt: 'Three teams, three products, one hackathon. A recap of the Cardano Africa Tech Summit Hackathon.',
-    post_type: 'Event Recap',
-    published_at: '03.2026',
-    author: 'NexTrium Hub',
-  },
-]
-
 const STATUS_LABELS: Record<Product['status'], string> = {
   in_development: 'In Development',
   beta: 'Beta',
@@ -65,27 +29,60 @@ const STATUS_LABELS: Record<Product['status'], string> = {
   sunset: 'Sunset',
 }
 
-async function getProducts(): Promise<Product[]> {
+async function getHomeData() {
   const supabase = createServiceClient()
-  const { data } = await supabase
+
+  const { data: products } = await supabase
     .from('products')
     .select('*')
     .eq('is_featured', true)
     .order('sort_order', { ascending: true })
     .limit(3)
-  return data ?? []
+
+  const { data: posts } = await supabase
+    .from('posts')
+    .select('slug, title, excerpt, post_type, published_at, author')
+    .eq('is_published', true)
+    .order('published_at', { ascending: false })
+    .limit(3)
+
+  const { data: hubEvent } = await supabase
+    .from('events')
+    .select('*')
+    .eq('is_hub_event', true)
+    .order('start_date', { ascending: false })
+    .limit(1)
+    .single()
+
+  const { count: eventCount } = await supabase
+    .from('events')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_hub_event', true)
+
+  const { count: projectCount } = await (supabase as any)
+    .from('community_projects')
+    .select('*', { count: 'exact', head: true })
+
+  return {
+    products:     (products     ?? []) as Product[],
+    posts:        (posts        ?? []) as Post[],
+    hubEvent:     hubEvent as NTEvent | null,
+    eventCount:   eventCount  ?? 0,
+    projectCount: projectCount ?? 0,
+  }
 }
 
 const POST_TYPE_CLASS: Record<string, string> = {
-  'Product Update': 'type-product',
-  'Announcement':   'type-announcement',
-  'Event Recap':    'type-event',
-  'Editorial':      'type-editorial',
-  'Research':       'type-research',
+  product_update: 'type-product',
+  announcement:   'type-announcement',
+  event_recap:    'type-event',
+  editorial:      'type-editorial',
+  research:       'type-research',
+  recruitment:    'type-editorial',
 }
 
 export default async function HomePage() {
-  const products = await getProducts()
+  const { products, posts, hubEvent, eventCount, projectCount } = await getHomeData()
   return (
     <>
       <style>{`
@@ -538,15 +535,15 @@ export default async function HomePage() {
             <div>
               <div className="hub-stats">
                 <div className="hub-stat">
-                  <div className="hub-stat-num">3+</div>
+                  <div className="hub-stat-num">{eventCount}+</div>
                   <div className="hub-stat-label">Events hosted</div>
                 </div>
                 <div className="hub-stat">
-                  <div className="hub-stat-num">10+</div>
+                  <div className="hub-stat-num">{projectCount}</div>
                   <div className="hub-stat-label">Community projects</div>
                 </div>
                 <div className="hub-stat">
-                  <div className="hub-stat-num">2026</div>
+                  <div className="hub-stat-num">2024</div>
                   <div className="hub-stat-label">Est.</div>
                 </div>
               </div>
@@ -555,20 +552,33 @@ export default async function HomePage() {
               </div>
             </div>
             <div>
-              <div className="event-card">
-                <div className="event-card-corner-tl" />
-                <div className="event-card-corner-br" />
-                <div className="event-type">Hackathon</div>
-                <div className="event-title">Cardano Africa Tech Summit Hackathon</div>
-                <div className="event-meta">Lagos, Nigeria · 2026</div>
-                <div className="event-badge">Completed</div>
-                <p className="event-desc">
-                  Teams built across agriculture, fintech, EdTech, and identity. Projects included AgriDatum, TechKR, and Medisure.
-                </p>
-                <div className="event-footer-row">
-                  <span className="event-location">3 community projects shipped</span>
+              {hubEvent ? (
+                <Link href={`/events/${hubEvent.slug}`} style={{ textDecoration: 'none' }}>
+                  <div className="event-card">
+                    <div className="event-card-corner-tl" />
+                    <div className="event-card-corner-br" />
+                    <div className="event-type">{hubEvent.event_type}</div>
+                    <div className="event-title">{hubEvent.title}</div>
+                    <div className="event-meta">
+                      {hubEvent.location} · {new Date(hubEvent.start_date).getFullYear()}
+                    </div>
+                    <div className="event-badge">{hubEvent.status}</div>
+                    <p className="event-desc">{hubEvent.description.slice(0, 160)}...</p>
+                    <div className="event-footer-row">
+                      <span className="event-location">{hubEvent.location}</span>
+                      <span style={{ fontSize: '14px', color: 'var(--orange)' }}>↗</span>
+                    </div>
+                  </div>
+                </Link>
+              ) : (
+                <div className="event-card">
+                  <div className="event-card-corner-tl" />
+                  <div className="event-card-corner-br" />
+                  <div className="event-type">Hub</div>
+                  <div className="event-title">Events coming soon.</div>
+                  <p className="event-desc">The Hub is actively planning its next programme. Check back soon.</p>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -586,21 +596,31 @@ export default async function HomePage() {
             </p>
           </div>
           <div className="blog-list">
-            {POSTS.map((post) => (
-              <Link key={post.slug} href={`/blog/${post.slug}`} className="blog-list-item">
-                <span className="blog-date">{post.published_at}</span>
-                <div>
-                  <div className="blog-post-title">{post.title}</div>
-                  <div className="blog-post-meta">
-                    <span className={`blog-post-type ${POST_TYPE_CLASS[post.post_type] ?? 'type-editorial'}`}>
-                      {post.post_type}
-                    </span>
-                    {post.author}
+            {posts.length === 0 ? (
+              <div style={{ padding: '48px 0', color: 'var(--grey-mid)', fontSize: '14px' }}>
+                No posts yet. Check back soon.
+              </div>
+            ) : (
+              posts.map((post) => (
+                <Link key={post.slug} href={`/blog/${post.slug}`} className="blog-list-item">
+                  <span className="blog-date">
+                    {post.published_at
+                      ? new Date(post.published_at).toLocaleDateString('en-GB', { month: '2-digit', year: 'numeric' }).replace('/', '.')
+                      : ''}
+                  </span>
+                  <div>
+                    <div className="blog-post-title">{post.title}</div>
+                    <div className="blog-post-meta">
+                      <span className={`blog-post-type ${POST_TYPE_CLASS[post.post_type] ?? 'type-editorial'}`}>
+                        {post.post_type.replace('_', ' ')}
+                      </span>
+                      {post.author}
+                    </div>
                   </div>
-                </div>
-                <span className="blog-arrow">↗</span>
-              </Link>
-            ))}
+                  <span className="blog-arrow">↗</span>
+                </Link>
+              ))
+            )}
           </div>
           <div className="blog-cta">
             <CTABox href="/blog" label="Read more" variant="dark" />
