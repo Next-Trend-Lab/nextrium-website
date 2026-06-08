@@ -14,7 +14,7 @@ const SUBJECTS: { value: Subject; label: string }[] = [
 ]
 
 const CONTACT_INFO = [
-  { label: 'Email',    value: 'abdulbasit@nextrium.org',    href: 'mailto:abdulbasit@nextrium.org'      },
+  { label: 'Email',    value: 'hello@nextrium.org',    href: 'mailto:hello@nextrium.org'      },
   { label: 'Website',  value: 'nextrium.org',               href: 'https://nextrium.org'                },
   { label: 'GitHub',   value: 'github.com/Next-Trend-Lab', href: 'https://github.com/Next-Trend-Lab'   },
   { label: 'Location', value: 'Lagos, Nigeria',             href: null                                  },
