@@ -1,16 +1,17 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import Header from '@/components/dashboard/Header'
 import Link from 'next/link'
+import type { CommunityProject } from '@/lib/types/database'
 
 export const metadata = { title: 'Community Projects' }
 
-async function getProjects() {
+async function getProjects(): Promise<CommunityProject[]> {
   const supabase = createServiceClient()
   const { data } = await supabase
     .from('community_projects')
     .select('*')
     .order('sort_order', { ascending: true })
-  return data ?? []
+  return (data ?? []) as CommunityProject[]
 }
 
 export default async function CommunityProjectsPage() {

@@ -4,7 +4,7 @@ import SectionTag from '@/components/shared/SectionTag'
 import CTABox from '@/components/ui/CTABox'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import type { NTEvent } from '@/lib/types/database'
+import type { NTEvent, CommunityProject } from '@/lib/types/database'
 
 export const metadata = {
   title: 'NexTrium Hub',
@@ -29,32 +29,6 @@ const WHAT_HAPPENS = [
   },
 ]
 
-const HUB_PROJECTS = [
-  {
-    name: 'AgriDatum',
-    team: 'Team AgriDatum',
-    event: 'CATS Hackathon 2025',
-    description: 'A data-driven agricultural intelligence platform helping smallholder farmers access market pricing, weather insights, and supply chain connectivity.',
-    tags: ['Agriculture', 'Data', 'Cardano'],
-    color: '#22C17A',
-  },
-  {
-    name: 'TechKR',
-    team: 'Team TechKR',
-    event: 'CATS Hackathon 2025',
-    description: 'A knowledge-sharing and reputation platform for technical contributors in the African developer community.',
-    tags: ['Community', 'Reputation', 'EdTech'],
-    color: '#4A6FA5',
-  },
-  {
-    name: 'Sovela',
-    team: 'Team Catalyst',
-    event: 'CATS Hackathon 2025',
-    description: 'A decentralised financial inclusion platform for Nigerian MSMEs built on Cardano. Originally built as Catalyst during the hackathon and now continuing development as Sovela.',
-    tags: ['Fintech', 'Cardano', 'MSME'],
-    color: '#7C3AED',
-  },
-]
 
 const TYPE_LABELS: Record<NTEvent['event_type'], string> = {
   hackathon: 'Hackathon',
@@ -85,14 +59,20 @@ async function getHubData() {
     .select('*', { count: 'exact', head: true })
     .eq('is_hub_event', true)
 
+  const { data: projects } = await (supabase as any)
+    .from('community_projects')
+    .select('*')
+    .order('sort_order', { ascending: true })
+
   return {
-    events:      events ?? [],
-    eventCount:  totalEvents ?? 0,
+    events:     events   ?? [] as NTEvent[],
+    eventCount: totalEvents ?? 0,
+    projects:   (projects ?? []) as CommunityProject[],
   }
 }
 
 export default async function HubPage() {
-  const { events, eventCount } = await getHubData()
+  const { events, eventCount, projects } = await getHubData()
 
   return (
     <>
@@ -142,17 +122,20 @@ export default async function HubPage() {
         .projects-section { background: var(--navy-deep); padding: var(--section-py) 0; }
         .projects-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(255,255,255,0.06); }
         .project-card { background: var(--navy); padding: 36px 32px; display: flex; flex-direction: column; gap: 16px; position: relative; }
-        .project-card::before, .project-card::after { content: ''; position: absolute; width: 10px; height: 10px; border-color: rgba(219,103,39,0.2); border-style: solid; }
+        .project-card { background: var(--navy); padding: 36px 32px; display: flex; flex-direction: column; gap: 16px; position: relative; transition: background var(--transition-base); }
+        .project-card:hover { background: var(--navy-mid); }
+        .project-card::before, .project-card::after { content: ''; position: absolute; width: 12px; height: 12px; border-color: rgba(219,103,39,0); border-style: solid; transition: border-color var(--transition-slow); }
         .project-card::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
         .project-card::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+        .project-card:hover::before, .project-card:hover::after { border-color: var(--orange); }
         .project-accent { width: 32px; height: 3px; border-radius: 2px; margin-bottom: 4px; }
         .project-name { font-family: var(--font-exo2); font-weight: 700; font-size: 22px; color: var(--white); letter-spacing: -0.3px; }
-        .project-team { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--grey-mid); }
-        .project-desc { font-size: 13px; color: var(--grey-mid); line-height: 1.7; flex: 1; }
-        .project-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); }
-        .project-event { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--grey-dark); }
-        .project-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-        .project-tag { font-family: var(--font-mono); font-size: 7.5px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 7px; border: 1px solid rgba(255,255,255,0.06); color: var(--grey-dark); }
+        .project-team { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #9AAABB; margin-bottom: 4px; }
+        .project-desc { font-size: 14px; color: #B0BEC5; line-height: 1.75; flex: 1; }
+        .project-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .project-event { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #6B7E94; }
+        .project-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+        .project-tag { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 9px; border: 1px solid rgba(255,255,255,0.12); color: #8A9BB0; }
         .involve-section { background: var(--navy-deep); padding: 80px 0; border-top: 2px solid var(--orange); }
         .involve-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
         .involve-statement { font-family: var(--font-exo2); font-weight: 800; font-size: clamp(28px, 3.5vw, 48px); color: var(--white); letter-spacing: -1.5px; line-height: 1.05; }
@@ -187,7 +170,7 @@ export default async function HubPage() {
                   <div className="hub-stat-label">Events hosted</div>
                 </div>
                 <div className="hub-stat">
-                  <div className="hub-stat-num">{HUB_PROJECTS.length}</div>
+                  <div className="hub-stat-num">{projects.length}</div>
                   <div className="hub-stat-label">Community projects</div>
                 </div>
                 <div className="hub-stat">
@@ -261,24 +244,44 @@ export default async function HubPage() {
             <SectionTag label="Community projects" />
             <h2 className="section-title">Built by the community.<br />Owned by the teams.</h2>
           </div>
-          <div className="projects-grid">
-            {HUB_PROJECTS.map((project) => (
-              <div key={project.name} className="project-card">
-                <div className="project-accent" style={{ background: project.color }} />
-                <div className="project-name">{project.name}</div>
-                <div className="project-team">{project.team}</div>
-                <div className="project-desc">{project.description}</div>
-                <div className="project-footer">
-                  <span className="project-event">{project.event}</span>
+          {projects.length === 0 ? (
+            <div className="hub-empty">No community projects yet.</div>
+          ) : (
+            <div className="projects-grid">
+              {projects.map((project) => (
+                <div key={project.slug} className="project-card">
+                  <div className="project-accent" style={{ background: project.cover_color }} />
+                  <div className="project-name">{project.name}</div>
+                  <div className="project-team">{project.team}</div>
+                  <div className="project-desc">{project.description}</div>
+                  <div className="project-footer">
+                    <span className="project-event">{project.event}</span>
+                  </div>
+                  <div className="project-tags">
+                    {project.tags.map((tag: string) => (
+                      <span key={tag} className="project-tag">{tag}</span>
+                    ))}
+                  </div>
+                  {(project.website_url || project.github_url) && (
+                    <div style={{ display: 'flex', gap: '12px', paddingTop: '12px' }}>
+                      {project.website_url && (
+                        <a href={project.website_url} target="_blank" rel="noopener noreferrer"
+                          style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--orange)', textDecoration: 'none' }}>
+                          Website ↗
+                        </a>
+                      )}
+                      {project.github_url && (
+                        <a href={project.github_url} target="_blank" rel="noopener noreferrer"
+                          style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-mid)', textDecoration: 'none' }}>
+                          GitHub ↗
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="project-tags">
-                  {project.tags.map((tag) => (
-                    <span key={tag} className="project-tag">{tag}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
