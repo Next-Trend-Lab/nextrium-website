@@ -444,3 +444,21 @@ export type ContactSubmission = Database['public']['Tables']['contact_submission
 export type HubProject        = Database['public']['Tables']['hub_projects']['Row']
 export type Role              = Database['public']['Tables']['roles']['Row']
 export type SiteSetting       = Database['public']['Tables']['site_settings']['Row']
+
+export interface CommunityProject {
+  id:          string
+  slug:        string
+  name:        string
+  team:        string
+  event:       string
+  description: string
+  tags:        string[]
+  status:      string
+  website_url: string | null
+  github_url:  string | null
+  cover_color: string
+  is_featured: boolean
+  sort_order:  number
+  created_at:  string
+  updated_at:  string
+}
