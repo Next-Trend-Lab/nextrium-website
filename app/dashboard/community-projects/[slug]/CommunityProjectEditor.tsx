@@ -52,7 +52,7 @@ export default function CommunityProjectEditor({ project }: { project: any }) {
       team:        team.trim(),
       event:       event.trim(),
       description: description.trim(),
-      tags:        tags.split(',').map((t) => t.trim()).filter(Boolean),
+      tags:        tags.split(',').map((t: string) => t.trim()).filter(Boolean),
       status,
       website_url: websiteUrl.trim() || null,
       github_url:  githubUrl.trim()  || null,
