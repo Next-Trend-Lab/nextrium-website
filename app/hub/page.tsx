@@ -125,13 +125,7 @@ export default function HubPage() {
           display: grid; grid-template-columns: 1fr 1fr;
           gap: 80px; align-items: end;
         }
-        .hub-headline {
-          font-family: var(--font-exo2); font-weight: 900;
-          font-size: clamp(48px, 8vw, 88px);
-          line-height: 0.95; letter-spacing: -2.5px;
-          color: var(--white); margin-bottom: 0;
-          animation: fadeUp 0.7s ease both; animation-delay: 0.1s;
-        }
+        .hub-headline { font-family: var(--font-exo2); font-weight: 900; font-size: clamp(36px, 5vw, 72px); line-height: 1.0; letter-spacing: -2px; color: var(--white); animation: fadeUp 0.7s ease both; animation-delay: 0.1s; }
         .hub-headline em { font-style: normal; color: var(--orange); }
         .hub-hero-right {
           animation: fadeUp 0.7s ease both; animation-delay: 0.25s;
@@ -315,7 +309,7 @@ export default function HubPage() {
             <div>
               <SectionTag label="NexTrium Hub" />
               <h1 className="hub-headline">
-                Where builders<br />connect and<br /><em>work gets done.</em>
+                Where builders connect<br />and <em>work gets done.</em>
               </h1>
             </div>
             <div className="hub-hero-right">

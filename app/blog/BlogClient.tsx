@@ -55,7 +55,7 @@ export default function BlogClient({ posts }: BlogClientProps) {
         .blog-hero-glow { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 55% 50% at 88% 12%, rgba(219,103,39,0.10) 0%, transparent 58%), radial-gradient(ellipse 40% 55% at 6% 88%, rgba(10,139,139,0.06) 0%, transparent 52%); }
         .blog-hero-grid { position: absolute; inset: 0; pointer-events: none; opacity: 0.03; background-image: linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px); background-size: 72px 72px; }
         .blog-hero-inner { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: end; }
-        .blog-headline { font-family: var(--font-exo2); font-weight: 900; font-size: clamp(48px, 8vw, 88px); line-height: 0.95; letter-spacing: -2.5px; color: var(--white); animation: fadeUp 0.7s ease both; animation-delay: 0.1s; }
+        .blog-headline { font-family: var(--font-exo2); font-weight: 900; font-size: clamp(36px, 5vw, 72px); line-height: 1.0; letter-spacing: -2px; color: var(--white); animation: fadeUp 0.7s ease both; animation-delay: 0.1s; }
         .blog-headline em { font-style: normal; color: var(--orange); }
         .blog-hero-desc { font-weight: 300; font-size: clamp(15px, 1.6vw, 18px); color: var(--grey-mid); line-height: 1.75; animation: fadeUp 0.7s ease both; animation-delay: 0.25s; padding-bottom: 8px; }
 
@@ -117,7 +117,7 @@ export default function BlogClient({ posts }: BlogClientProps) {
             <div>
               <SectionTag label="Blog" />
               <h1 className="blog-headline">
-                Ideas worth<br /><em>writing down.</em>
+                Ideas worth <em>writing down.</em>
               </h1>
             </div>
             <p className="blog-hero-desc">

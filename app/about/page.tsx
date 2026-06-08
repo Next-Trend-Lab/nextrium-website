@@ -89,13 +89,7 @@ export default function AboutPage() {
           display: grid; grid-template-columns: 1fr 1fr;
           gap: 80px; align-items: end;
         }
-        .about-headline {
-          font-family: var(--font-exo2); font-weight: 900;
-          font-size: clamp(48px, 8vw, 88px);
-          line-height: 0.95; letter-spacing: -2.5px;
-          color: var(--white); margin-bottom: 0;
-          animation: fadeUp 0.7s ease both; animation-delay: 0.1s;
-        }
+        .about-headline { font-family: var(--font-exo2); font-weight: 900; font-size: clamp(36px, 5vw, 72px); line-height: 1.0; letter-spacing: -2px; color: var(--white); animation: fadeUp 0.7s ease both; animation-delay: 0.1s; }
         .about-headline em { font-style: normal; color: var(--orange); }
         .about-hero-right {
           animation: fadeUp 0.7s ease both; animation-delay: 0.25s;
@@ -288,7 +282,7 @@ export default function AboutPage() {
             <div>
               <SectionTag label="About NexTrium" />
               <h1 className="about-headline">
-                Built in<br /><em>Lagos.</em><br />Built for<br />the world.
+                Built in Lagos.<br /><em>Built for the world.</em>
               </h1>
             </div>
             <div className="about-hero-right">
