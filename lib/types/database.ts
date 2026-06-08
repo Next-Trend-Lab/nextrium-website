@@ -136,6 +136,8 @@ export type Database = {
           cover_color: string
           cover_image_url: string | null
           youtube_url: string | null
+          social_links: string[] | null
+          registration_url: string | null
           created_at: string
           updated_at: string
         }
@@ -153,6 +155,8 @@ export type Database = {
           cover_color?: string
           cover_image_url?: string | null
           youtube_url?: string | null
+          social_links?: string[] | null
+          registration_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -169,6 +173,8 @@ export type Database = {
           cover_color?: string
           cover_image_url?: string | null
           youtube_url?: string | null
+          social_links?: string[] | null
+          registration_url?: string | null
           updated_at?: string
         }
       }

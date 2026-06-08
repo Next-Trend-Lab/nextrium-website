@@ -46,7 +46,9 @@ export default function EventEditor({ event }: EventEditorProps) {
   const [isHubEvent,  setIsHubEvent]  = useState(event?.is_hub_event       ?? true)
   const [coverColor,  setCoverColor]  = useState(event?.cover_color        ?? '#DB6727')
   const [coverImage,  setCoverImage]  = useState(event?.cover_image_url    ?? '')
-  const [youtubeUrl,  setYoutubeUrl]  = useState(event?.youtube_url        ?? '')
+  const [youtubeUrl,       setYoutubeUrl]       = useState(event?.youtube_url        ?? '')
+  const [registrationUrl,  setRegistrationUrl]  = useState(event?.registration_url  ?? '')
+  const [socialLinks,      setSocialLinks]      = useState((event?.social_links ?? []).join('\n'))
 
   const [saving,   setSaving]   = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -77,8 +79,10 @@ export default function EventEditor({ event }: EventEditorProps) {
       is_hub_event:    isHubEvent,
       cover_color:     coverColor,
       cover_image_url: coverImage.trim() || null,
-      youtube_url:     youtubeUrl.trim() || null,
-      updated_at:      now,
+      youtube_url:      youtubeUrl.trim() || null,
+      registration_url: registrationUrl.trim() || null,
+      social_links:     socialLinks.split('\n').map((s) => s.trim()).filter(Boolean),
+      updated_at:       now,
     }
 
     try {
@@ -221,6 +225,31 @@ export default function EventEditor({ event }: EventEditorProps) {
                 <label className="editor-label" htmlFor="slug">Slug</label>
                 <input className="editor-input" id="slug" type="text" placeholder="event-slug"
                   value={slug} onChange={(e) => setSlug(slugify(e.target.value))} />
+              </div>
+
+              <div className="editor-field">
+                <label className="editor-label" htmlFor="registration_url">Registration URL</label>
+                <input
+                  className="editor-input"
+                  id="registration_url"
+                  type="url"
+                  placeholder="https://lu.ma/..."
+                  value={registrationUrl}
+                  onChange={(e) => setRegistrationUrl(e.target.value)}
+                />
+              </div>
+
+              <div className="editor-field">
+                <label className="editor-label" htmlFor="social_links">Social media links</label>
+                <textarea
+                  className="editor-textarea"
+                  id="social_links"
+                  placeholder={`One URL per line\nhttps://x.com/...\nhttps://linkedin.com/...`}
+                  value={socialLinks}
+                  onChange={(e) => setSocialLinks(e.target.value)}
+                  rows={4}
+                />
+                <span style={{ fontSize: '11px', color: 'var(--grey-dark)' }}>One URL per line. X, LinkedIn, YouTube, or any platform.</span>
               </div>
 
               <div className="editor-field">
