@@ -1,25 +1,396 @@
-@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;800;900&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
+/* ── Brand Tokens ───────────────────────────────────────────── */
 :root {
-  --navy-deep: #071628;
-  --navy: #0D233D;
-  --navy-mid: #163352;
-  --orange: #DB6727;
-  --orange-warm: #E8843A;
-  --grey-mid: #8A9BB0;
-  --white: #FFFFFF;
+  /* Primary */
+  --navy-deep:  #071628;
+  --navy:       #0D233D;
+  --navy-mid:   #163352;
+  --orange:     #DB6727;
+  --orange-w:   #E8843A;
+  --orange-f:   #C4521A;
+
+  /* Accent */
+  --teal:       #0A8B8B;
+  --teal-l:     #12B3B3;
+  --gold:       #D4A843;
+  --gold-l:     #E8C06A;
+  --slate:      #4A6FA5;
+  --slate-l:    #6B8FC4;
+
+  /* Neutrals */
+  --black:      #060E18;
+  --grey-dark:  #2E3F54;
+  --grey-mid:   #8A9BB0;
+  --grey-light: #E2E6ED;
+  --off-white:  #F5F6F8;
+  --white:      #FFFFFF;
+
+  /* Semantic */
+  --success:    #22C17A;
+  --warning:    #D4A843;
+  --error:      #E84545;
+
+  /* Typography */
+  --font-exo2:  var(--font-exo2, 'Exo 2', sans-serif);
+  --font-dm:    var(--font-dm, 'DM Sans', sans-serif);
+  --font-mono:  var(--font-mono, 'Space Mono', monospace);
+
+  /* Spacing scale */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  24px;
+  --space-6:  32px;
+  --space-7:  48px;
+  --space-8:  64px;
+  --space-9:  80px;
+  --space-10: 120px;
+
+  /* Layout */
+  --max-width:     1400px;
+  --nav-height:    64px;
+  --container-px:  clamp(20px, 4vw, 48px);
+  --section-py:    120px;
+
+  /* Transitions */
+  --transition-fast:   0.15s ease;
+  --transition-base:   0.2s ease;
+  --transition-slow:   0.3s ease;
 }
 
-* {
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
+/* ── Base ───────────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  background: var(--navy-deep);
+  font-family: var(--font-dm);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
   color: var(--white);
-  font-family: var(--font-dm), 'DM Sans', sans-serif;
+  background: var(--navy-deep);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Typography ─────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-exo2);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+}
+
+p {
+  line-height: 1.7;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ── Layout helpers ─────────────────────────────────────────── */
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--container-px);
+}
+
+.section-py {
+  padding-block: var(--section-py);
+}
+
+/* ── Section tag ────────────────────────────────────────────── */
+.section-tag {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: var(--space-4);
+}
+
+/* ── Section titles ─────────────────────────────────────────── */
+.section-title {
+  font-family: var(--font-exo2);
+  font-weight: 800;
+  font-size: clamp(36px, 5vw, 56px);
+  letter-spacing: -1px;
+  line-height: 1.05;
+  color: var(--white);
+}
+
+.section-title-dark {
+  font-family: var(--font-exo2);
+  font-weight: 800;
+  font-size: clamp(36px, 5vw, 56px);
+  letter-spacing: -1px;
+  line-height: 1.05;
+  color: var(--navy-deep);
+}
+
+/* ── Utility ────────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+img, svg {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+/* ── Dashboard readability fixes ─────────────────────────────── */
+
+/* Table headers */
+.dash-table th {
+  font-size: 11px !important;
+  color: #B0BEC5 !important;
+  letter-spacing: 0.12em;
+}
+
+/* Table cell text */
+.dash-table td {
+  font-size: 14px !important;
+  color: #E8EDF2 !important;
+}
+
+/* Editor and form labels */
+.editor-label,
+.form-label,
+.editor-panel-title,
+.sidebar-group-label,
+.dash-stat-label,
+.detail-section-title,
+.apps-count-label,
+.contact-panel-title,
+.apps-panel-title {
+  font-size: 11px !important;
+  color: #B0BEC5 !important;
+  letter-spacing: 0.12em;
+}
+
+/* Sidebar nav items */
+.sidebar-item {
+  font-size: 14px !important;
+  color: #8A9BB0;
+}
+
+/* Panel titles */
+.dash-panel-title {
+  font-size: 15px !important;
+  color: #E8EDF2 !important;
+}
+
+/* Header title */
+.dash-header-title {
+  font-size: 20px !important;
+}
+
+/* Header description */
+.dash-header-desc {
+  font-size: 13px !important;
+  color: #8A9BB0 !important;
+}
+
+/* Badge text */
+.dash-badge {
+  font-size: 10px !important;
+  letter-spacing: 0.08em;
+}
+
+/* Mono labels across dashboard */
+.dash-list-count,
+.dash-edit-link,
+.dash-new-btn,
+.dash-panel-link,
+.dash-quick-btn {
+  font-size: 11px !important;
+}
+
+/* Input and select text */
+.editor-input,
+.editor-select,
+.editor-textarea {
+  font-size: 14px !important;
+}
+
+/* Row meta text */
+.dash-row-title { font-size: 14px !important; color: #E8EDF2 !important; }
+.dash-row-meta  { font-size: 12px !important; color: #8A9BB0 !important; }
+
+/* App and contact rows */
+.app-name,
+.contact-name    { font-size: 14px !important; color: #E8EDF2 !important; }
+.app-role,
+.contact-subject { font-size: 12px !important; color: #8A9BB0 !important; }
+.app-date        { font-size: 11px !important; color: #6B7E94 !important; }
+
+/* Detail panel */
+.detail-name  { font-size: 20px !important; color: #ffffff !important; }
+.detail-email { font-size: 14px !important; }
+.detail-text  { font-size: 14px !important; color: #D0D8E4 !important; line-height: 1.75; }
+
+/* ── Contact inbox readability ───────────────────────────────── */
+.contact-panel-title {
+  font-size: 12px !important;
+  color: #B0BEC5 !important;
+}
+
+.contact-new-count {
+  font-size: 11px !important;
+}
+
+.contact-row .contact-name {
+  font-size: 14px !important;
+  color: #E8EDF2 !important;
+}
+
+.contact-row .contact-subject {
+  font-size: 12px !important;
+  color: #9AAABB !important;
+}
+
+.contact-row .contact-preview {
+  font-size: 12px !important;
+  color: #6B7E94 !important;
+}
+
+.contact-row div[style] {
+  font-size: 11px !important;
+  color: #6B7E94 !important;
+}
+
+/* ── Applications inbox readability ─────────────────────────── */
+.app-row .app-name {
+  font-size: 14px !important;
+  color: #E8EDF2 !important;
+}
+
+.app-row .app-role {
+  font-size: 12px !important;
+  color: #9AAABB !important;
+}
+
+.app-row .app-date {
+  font-size: 11px !important;
+  color: #6B7E94 !important;
+}
+
+.apps-count-num {
+  font-size: 22px !important;
+}
+
+.apps-count-label {
+  font-size: 9px !important;
+  color: #6B7E94 !important;
+}
+
+/* ── Detail panel readability ────────────────────────────────── */
+.detail-name {
+  font-size: 20px !important;
+  color: #ffffff !important;
+}
+
+.detail-email-link,
+.detail-email {
+  font-size: 14px !important;
+}
+
+.detail-section-title {
+  font-size: 10px !important;
+  color: #9AAABB !important;
+  letter-spacing: 0.15em;
+}
+
+.detail-text {
+  font-size: 14px !important;
+  color: #D0D8E4 !important;
+  line-height: 1.75;
+}
+
+.detail-empty {
+  font-size: 14px !important;
+  color: #6B7E94 !important;
+}
+
+/* ── Placeholder text globally ───────────────────────────────── */
+.editor-input::placeholder,
+.editor-textarea::placeholder,
+.form-input::placeholder,
+.login-input::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: #4A5C6E !important;
+  opacity: 1;
+}
+
+/* ── Status pills and buttons ────────────────────────────────── */
+.status-pill,
+.status-select-btn {
+  font-size: 10px !important;
+  color: #9AAABB !important;
+}
+
+.status-select-btn.active {
+  color: #ffffff !important;
+}
+
+/* ── Status select buttons ───────────────────────────────────── */
+.status-select-btn {
+  font-size: 11px !important;
+  color: #B0BEC5 !important;
+  letter-spacing: 0.1em;
+  padding: 12px 16px !important;
+}
+
+.status-select-btn.active {
+  color: #ffffff !important;
+  background: rgba(219,103,39,0.12) !important;
+}
+
+/* ── Detail panel labels ─────────────────────────────────────── */
+.detail-section-title {
+  font-size: 11px !important;
+  color: #B0BEC5 !important;
+  margin-bottom: 6px !important;
+}
+
+.detail-text {
+  font-size: 14px !important;
+  color: #D0D8E4 !important;
 }
