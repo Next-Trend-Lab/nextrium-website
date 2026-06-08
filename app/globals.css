@@ -49,9 +49,9 @@
   --space-10: 120px;
 
   /* Layout */
-  --max-width:     1200px;
+  --max-width:     1400px;
   --nav-height:    64px;
-  --container-px:  clamp(24px, 5vw, 80px);
+  --container-px:  clamp(20px, 4vw, 48px);
   --section-py:    120px;
 
   /* Transitions */

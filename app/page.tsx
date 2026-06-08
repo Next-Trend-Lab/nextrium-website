@@ -1,18 +1,11 @@
 import Link from 'next/link'
 import Navbar from '@/components/public/Navbar'
 import Footer from '@/components/public/Footer'
-import NTMark from '@/components/shared/NTMark'
 import CTABox from '@/components/ui/CTABox'
 import SectionTag from '@/components/shared/SectionTag'
-
-interface Product {
-  slug: string
-  name: string
-  tagline: string
-  status: 'in_development' | 'beta' | 'live' | 'sunset'
-  category: string[]
-  bodyColor: string
-}
+import NTMark from '@/components/shared/NTMark'
+import { createServiceClient } from '@/lib/supabase/server'
+import type { Product } from '@/lib/types/database'
 
 interface Service {
   num: string
@@ -28,33 +21,6 @@ interface Post {
   published_at: string
   author: string
 }
-
-const PRODUCTS: Product[] = [
-  {
-    slug: 'zivana',
-    name: 'Zivana Protocol',
-    tagline: "Open Layer 2 trust infrastructure for Africa's informal economy.",
-    status: 'in_development',
-    category: ['Web3', 'Cardano', 'Trust'],
-    bodyColor: '#0A8B8B',
-  },
-  {
-    slug: 'sovela',
-    name: 'Sovela',
-    tagline: "Community credit and market intelligence built on Zivana Protocol.",
-    status: 'in_development',
-    category: ['Fintech', 'MSME', 'Nigeria'],
-    bodyColor: '#4A6FA5',
-  },
-  {
-    slug: 'accordiax',
-    name: 'Accordiax',
-    tagline: 'Trust-based student-consultant agreement platform for Nigeria.',
-    status: 'in_development',
-    category: ['EdTech', 'Trust', 'Nigeria'],
-    bodyColor: '#D4A843',
-  },
-]
 
 const SERVICES: Service[] = [
   { num: '01', name: 'Product Development',        description: 'Web, mobile, and enterprise applications built from idea to deployment.' },
@@ -99,6 +65,17 @@ const STATUS_LABELS: Record<Product['status'], string> = {
   sunset: 'Sunset',
 }
 
+async function getProducts(): Promise<Product[]> {
+  const supabase = createServiceClient()
+  const { data } = await supabase
+    .from('products')
+    .select('*')
+    .eq('is_featured', true)
+    .order('sort_order', { ascending: true })
+    .limit(3)
+  return data ?? []
+}
+
 const POST_TYPE_CLASS: Record<string, string> = {
   'Product Update': 'type-product',
   'Announcement':   'type-announcement',
@@ -107,7 +84,8 @@ const POST_TYPE_CLASS: Record<string, string> = {
   'Research':       'type-research',
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const products = await getProducts()
   return (
     <>
       <style>{`
@@ -126,7 +104,7 @@ export default function HomePage() {
         .hero {
           min-height: 100vh;
           display: flex; flex-direction: column; justify-content: flex-end;
-          padding-bottom: 72px; padding-top: var(--nav-height);
+          padding-top: calc(var(--nav-height) + 80px); padding-bottom: 100px;
           position: relative; overflow: hidden; background: var(--navy-deep);
         }
         .hero-glow {
@@ -185,60 +163,29 @@ export default function HomePage() {
           background: var(--navy-deep); padding: var(--section-py) 0;
           border-top: 1px solid rgba(255,255,255,0.05);
         }
-        .builds-grid {
-          display: grid; grid-template-columns: repeat(3, 1fr);
-          gap: 1px; background: rgba(255,255,255,0.06);
-        }
-        .build-card {
-          background: var(--navy); padding: 40px 32px 32px;
-          display: flex; flex-direction: column; gap: 20px;
-          text-decoration: none; transition: background var(--transition-base);
-          position: relative;
-        }
-        .build-card::before, .build-card::after {
-          content: ''; position: absolute;
-          width: 12px; height: 12px;
-          border-color: rgba(219,103,39,0); border-style: solid;
-          transition: border-color var(--transition-slow);
-        }
-        .build-card::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
-        .build-card::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
-        .build-card:hover { background: var(--navy-mid); }
-        .build-card:hover::before, .build-card:hover::after { border-color: var(--orange); }
-        .build-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-        .build-mark-wrap {
-          width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;
-          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 2px; flex-shrink: 0;
-        }
-        .build-status {
-          font-family: var(--font-mono); font-size: 7.5px;
-          letter-spacing: 0.15em; text-transform: uppercase; padding: 4px 8px;
-        }
-        .status-in_development { background: rgba(212,168,67,0.1);  color: var(--gold);    border: 1px solid rgba(212,168,67,0.2); }
-        .status-live            { background: rgba(34,193,122,0.1);  color: var(--success); border: 1px solid rgba(34,193,122,0.2); }
-        .status-beta            { background: rgba(10,139,139,0.1);  color: var(--teal);    border: 1px solid rgba(10,139,139,0.2); }
-        .status-sunset          { background: rgba(232,69,69,0.1);   color: var(--error);   border: 1px solid rgba(232,69,69,0.2); }
-        .build-name {
-          font-family: var(--font-exo2); font-weight: 700;
-          font-size: 20px; color: var(--white); letter-spacing: -0.3px; line-height: 1.2;
-        }
-        .build-desc { font-size: 13px; color: var(--grey-mid); line-height: 1.65; flex: 1; }
-        .build-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-        .build-tag {
-          font-family: var(--font-mono); font-size: 7.5px;
-          letter-spacing: 0.12em; text-transform: uppercase;
-          padding: 3px 8px; border: 1px solid rgba(255,255,255,0.08); color: var(--grey-mid);
-        }
-        .build-footer {
-          display: flex; align-items: center; justify-content: space-between;
-          padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);
-        }
-        .build-arrow {
-          font-size: 16px; color: var(--grey-dark);
-          transition: color var(--transition-base), transform var(--transition-base);
-        }
-        .build-card:hover .build-arrow { color: var(--orange); transform: translate(3px, -3px); }
+        .builds-stack { display: flex; flex-direction: column; gap: 1px; background: rgba(255,255,255,0.06); }
+        .build-eco-card { display: grid; grid-template-columns: 1.3fr 0.7fr; min-height: 320px; text-decoration: none; position: relative; overflow: hidden; transition: filter var(--transition-base); }
+        .build-eco-card::before, .build-eco-card::after { content: ''; position: absolute; width: 16px; height: 16px; border-color: rgba(219,103,39,0); border-style: solid; transition: border-color var(--transition-slow); z-index: 2; }
+        .build-eco-card::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .build-eco-card::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+        .build-eco-card:hover::before, .build-eco-card:hover::after { border-color: var(--orange); }
+        .build-eco-card:hover { filter: brightness(1.06); }
+        .build-eco-left { display: flex; flex-direction: column; gap: 16px; padding: 48px; justify-content: center; }
+        .build-eco-name { font-family: var(--font-exo2); font-weight: 800; font-size: clamp(24px, 3vw, 38px); color: var(--white); letter-spacing: -0.5px; line-height: 1.1; }
+        .build-eco-desc { font-size: 15px; color: rgba(255,255,255,0.65); line-height: 1.7; max-width: 420px; }
+        .build-eco-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .build-eco-tag { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 10px; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); }
+        .build-eco-cta { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--orange); margin-top: 8px; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.1); transition: gap var(--transition-base); }
+        .build-eco-card:hover .build-eco-cta { gap: 16px; }
+        .build-eco-right { display: flex; align-items: center; justify-content: center; padding: 48px; position: relative; overflow: hidden; }
+        .build-eco-right::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 60% at 60% 50%, rgba(255,255,255,0.04) 0%, transparent 70%); pointer-events: none; }
+        .build-eco-img { width: 100%; max-width: 320px; max-height: 220px; object-fit: contain; display: block; transition: transform var(--transition-slow); position: relative; z-index: 1; }
+        .build-eco-card:hover .build-eco-img { transform: scale(1.05); }
+        .build-status { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; padding: 4px 10px; display: inline-block; width: fit-content; }
+        .status-in_development { background: rgba(212,168,67,0.15); color: var(--gold);    border: 1px solid rgba(212,168,67,0.3); }
+        .status-live            { background: rgba(34,193,122,0.15); color: var(--success); border: 1px solid rgba(34,193,122,0.3); }
+        .status-beta            { background: rgba(10,139,139,0.15); color: var(--teal);    border: 1px solid rgba(10,139,139,0.3); }
+        .status-sunset          { background: rgba(232,69,69,0.15);  color: var(--error);   border: 1px solid rgba(232,69,69,0.3); }
         .builds-cta-row { display: flex; border-top: 1px solid rgba(255,255,255,0.06); }
         .builds-cta-row a { max-width: 100% !important; width: 100% !important; }
         .services-section { background: var(--off-white); padding: var(--section-py) 0; }
@@ -427,7 +374,9 @@ export default function HomePage() {
           .hero-cta-item { border-right: 1px solid rgba(255,255,255,0.18); border-bottom: none; }
           .hero-cta-item:last-child { border-bottom: 1px solid rgba(255,255,255,0.18); }
           .split-header    { grid-template-columns: 1fr; gap: 16px; }
-          .builds-grid     { grid-template-columns: 1fr; }
+          .build-eco-card { grid-template-columns: 1fr; min-height: auto; }
+          .build-eco-right { min-height: 200px; padding: 32px; }
+          .build-eco-left { padding: 32px; }
           .services-layout { grid-template-columns: 1fr; gap: 40px; }
           .hub-layout      { grid-template-columns: 1fr; gap: 48px; }
           .blog-list-item  { grid-template-columns: 100px 1fr auto; gap: 16px; }
@@ -464,47 +413,65 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="builds-section" id="builds">
-        <div className="container">
-          <div className="split-header">
-            <div>
-              <SectionTag label="Current builds" />
-              <h2 className="section-title">What we&apos;re<br />building now.</h2>
+      {products.length > 0 && (
+        <section className="builds-section" id="builds">
+          <div className="container">
+            <div className="split-header">
+              <div>
+                <SectionTag label="Current builds" />
+                <h2 className="section-title">What we&apos;re<br />building now.</h2>
+              </div>
+              <p className="split-header-desc">
+                {products.length} products in active development. Each one addresses a trust gap in an underserved market. The list will grow.
+              </p>
             </div>
-            <p className="split-header-desc">
-              Three products in active development. Each one addresses a trust gap in an underserved market. The list will grow.
-            </p>
-          </div>
-          <div className="builds-grid">
-            {PRODUCTS.map((product) => (
-              <Link key={product.slug} href={`/products/${product.slug}`} className="build-card">
-                <div className="build-card-top">
-                  <div className="build-mark-wrap">
-                    <NTMark size={32} bodyColor={product.bodyColor} accentColor="#DB6727" />
+
+            <div className="builds-stack">
+              {products.map((product, i) => (
+                <Link
+                  key={product.slug}
+                  href={`/products/${product.slug}`}
+                  className="build-eco-card"
+                  style={{ background: i === 0 ? '#163352' : product.body_color }}
+                >
+                  <div className="build-eco-left">
+                    <span className={`build-status status-${product.status}`}>
+                      {STATUS_LABELS[product.status]}
+                    </span>
+                    <div className="build-eco-name">{product.name}</div>
+                    <div className="build-eco-desc">{product.tagline}</div>
+                    <div className="build-eco-tags">
+                      {product.category.slice(0, 4).map((tag) => (
+                        <span key={tag} className="build-eco-tag">{tag}</span>
+                      ))}
+                    </div>
+                    <div className="build-eco-cta">
+                      <span>Explore {product.name}</span>
+                      <span>→</span>
+                    </div>
                   </div>
-                  <span className={`build-status status-${product.status}`}>
-                    {STATUS_LABELS[product.status]}
-                  </span>
-                </div>
-                <div className="build-name">{product.name}</div>
-                <div className="build-desc">{product.tagline}</div>
-                <div className="build-tags">
-                  {product.category.map((tag) => (
-                    <span key={tag} className="build-tag">{tag}</span>
-                  ))}
-                </div>
-                <div className="build-footer">
-                  <span style={{ fontSize: '11px', color: 'var(--grey-dark)', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>LEARN MORE</span>
-                  <span className="build-arrow">↗</span>
-                </div>
-              </Link>
-            ))}
+                  <div className="build-eco-right">
+                    {product.cover_image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={product.cover_image_url}
+                        alt={product.name}
+                        className="build-eco-img"
+                      />
+                    ) : (
+                      <NTMark size={80} bodyColor={product.body_color} accentColor="#DB6727" />
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <div className="builds-cta-row">
+              <CTABox href="/products" label="View all builds" variant="dark" fullWidth />
+            </div>
           </div>
-          <div className="builds-cta-row">
-            <CTABox href="/products" label="View all builds" variant="dark" fullWidth />
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="services-section" id="services">
         <div className="container">
