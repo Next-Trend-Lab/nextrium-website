@@ -47,11 +47,25 @@ const TEAM = [
   {
     name: 'Abdulbasit Abdulrahman Adigun',
     role: 'Founder and Director',
-    bio: 'Full-stack developer, Web3 builder, and community architect. Background in Mathematics Education from the University of Lagos. Building NexTrium from Lagos with a focus on economic inclusion and informal economy infrastructure.',
+    bio: 'The infrastructure for trust does not yet exist where it is needed most. We are building it.',
+    detail: 'Full-stack developer, Web3 builder, and community architect. Background in Mathematics Education from the University of Lagos. Building NexTrium from Lagos with a focus on economic inclusion and informal economy infrastructure.',
+    email: 'abdulbasit@nextrium.org',
     social: {
-      github: 'https://github.com/devbasrahtop',
+      github:   'https://github.com/devbasrahtop',
       linkedin: '#',
-      twitter: '#',
+      twitter:  '#',
+    },
+  },
+  {
+    name: 'Aanuoluwapo Ayomide Osemene',
+    role: 'Co-Director',
+    bio: 'Great communities do not happen by accident. They are organised, nurtured, and sustained by people who show up.',
+    detail: 'Core team member and co-director at NexTrium. Active contributor to the NexTrend Hub community and key organiser of the Cardano Africa Tech Summit Hackathon.',
+    email: '',
+    social: {
+      github:   '#',
+      linkedin: '#',
+      twitter:  '#',
     },
   },
 ]
@@ -197,46 +211,88 @@ export default function AboutPage() {
         }
         .affiliation-role { font-size: 12px; color: var(--grey-mid); }
         .team-section { background: var(--navy); padding: var(--section-py) 0; }
-        .team-grid {
-          display: grid; grid-template-columns: repeat(3, 1fr);
-          gap: 1px; background: rgba(255,255,255,0.06);
-        }
+        .team-grid { display: flex; flex-direction: column; gap: 2px; }
         .team-card {
-          background: var(--navy-mid); padding: 40px 32px;
-          display: flex; flex-direction: column; gap: 16px;
-          position: relative;
+          display: grid; grid-template-columns: 1fr 1fr;
+          min-height: 520px; position: relative; overflow: hidden;
         }
-        .team-card::before, .team-card::after {
-          content: ''; position: absolute;
-          width: 10px; height: 10px;
-          border-color: rgba(219,103,39,0.3); border-style: solid;
+        .team-card-photo {
+          position: relative; overflow: hidden; background: var(--navy-mid);
         }
-        .team-card::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
-        .team-card::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
-        .team-avatar {
-          width: 64px; height: 64px; border-radius: 2px;
-          background: var(--navy); border: 1px solid rgba(255,255,255,0.08);
+        .team-card-photo img {
+          width: 100%; height: 100%;
+          object-fit: cover; object-position: center top; display: block;
+        }
+        .team-card-photo-placeholder {
+          width: 100%; height: 100%; min-height: 520px;
           display: flex; align-items: center; justify-content: center;
+          background: linear-gradient(135deg, var(--navy-mid) 0%, var(--navy) 100%);
           font-family: var(--font-exo2); font-weight: 900;
-          font-size: 22px; color: var(--orange);
+          font-size: 96px; color: rgba(219,103,39,0.3); letter-spacing: -4px;
         }
-        .team-name {
+        .team-card-body {
+          background: var(--navy-deep); padding: 48px;
+          display: flex; flex-direction: column; justify-content: space-between;
+          position: relative; overflow: hidden;
+        }
+        .team-card-pattern {
+          position: absolute; right: -80px; top: 50%;
+          transform: translateY(-50%);
+          width: 480px; height: 480px;
+          pointer-events: none; z-index: 0;
+        }
+        .team-card-pattern::before,
+        .team-card-pattern::after,
+        .team-card-pattern span::before,
+        .team-card-pattern span::after {
+          content: ''; position: absolute; top: 50%; left: 50%;
+          transform: translate(-50%, -50%);
+          border-radius: 50%; border: 1px solid rgba(180,80,20,0.2);
+        }
+        .team-card-pattern::before  { width: 180px; height: 180px; }
+        .team-card-pattern::after   { width: 280px; height: 280px; }
+        .team-card-pattern span::before { width: 380px; height: 380px; }
+        .team-card-pattern span::after  { width: 480px; height: 480px; }
+        .tc-corner {
+          position: absolute; width: 18px; height: 18px;
+          border-color: rgba(255,255,255,0.25); border-style: solid; z-index: 2;
+        }
+        .tc-tl { top: 20px; left: 20px; border-width: 1px 0 0 1px; }
+        .tc-tr { top: 20px; right: 20px; border-width: 1px 1px 0 0; }
+        .tc-bl { bottom: 20px; left: 20px; border-width: 0 0 1px 1px; }
+        .tc-br { bottom: 20px; right: 20px; border-width: 0 1px 1px 0; }
+        .team-card-top { position: relative; z-index: 1; }
+        .team-card-quote {
           font-family: var(--font-exo2); font-weight: 700;
-          font-size: 18px; color: var(--white); letter-spacing: -0.2px;
+          font-size: clamp(18px, 1.8vw, 26px); color: var(--white);
+          line-height: 1.35; letter-spacing: -0.3px; margin-bottom: 20px;
         }
-        .team-role {
-          font-family: var(--font-mono); font-size: 9px;
-          letter-spacing: 0.15em; text-transform: uppercase; color: var(--orange);
+        .team-card-attribution {
+          font-size: 13px; color: rgba(255,255,255,0.4); font-family: var(--font-dm);
         }
-        .team-bio { font-size: 13px; color: var(--grey-mid); line-height: 1.7; flex: 1; }
-        .team-social { display: flex; gap: 16px; }
-        .team-social a {
+        .team-card-divider {
+          width: 100%; height: 1px; background: rgba(255,255,255,0.08);
+          margin: 24px 0; position: relative; z-index: 1;
+        }
+        .team-card-bottom { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 20px; }
+        .team-card-role-badge {
+          font-family: var(--font-mono); font-size: 8px;
+          letter-spacing: 0.2em; text-transform: uppercase;
+          color: var(--orange); margin-bottom: 8px;
+        }
+        .team-card-bio { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.75; }
+        .team-card-links { display: flex; align-items: center; gap: 0; flex-wrap: wrap; }
+        .team-card-link {
           font-family: var(--font-mono); font-size: 8px;
           letter-spacing: 0.12em; text-transform: uppercase;
-          color: var(--grey-mid); text-decoration: none;
-          transition: color var(--transition-base);
+          color: rgba(255,255,255,0.35); text-decoration: none;
+          padding: 8px 14px; border: 1px solid rgba(255,255,255,0.08);
+          transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 6px;
+          margin-right: -1px;
         }
-        .team-social a:hover { color: var(--orange); }
+        .team-card-link:hover { color: var(--white); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
+        .team-card-link-email { color: rgba(219,103,39,0.7); border-color: rgba(219,103,39,0.2); }
+        .team-card-link-email:hover { color: var(--orange); border-color: var(--orange); background: rgba(219,103,39,0.06); }
         .team-note { border-top: 1px solid rgba(255,255,255,0.06); padding: 40px 0; }
         .team-note-text {
           font-family: var(--font-mono); font-size: 10px;
@@ -262,7 +318,9 @@ export default function AboutPage() {
           .about-hero-inner  { grid-template-columns: 1fr; gap: 32px; }
           .story-grid        { grid-template-columns: 1fr; gap: 40px; }
           .details-grid      { grid-template-columns: 1fr; gap: 48px; }
-          .team-grid         { grid-template-columns: 1fr; }
+          .team-card { grid-template-columns: 1fr; min-height: auto; }
+          .team-card-photo-placeholder { min-height: 320px; font-size: 64px; }
+          .team-card-body { padding: 36px 28px; }
           .about-cta-inner   { grid-template-columns: 1fr; gap: 40px; }
           .mission-block     { padding: 40px 32px; }
         }
@@ -403,20 +461,53 @@ export default function AboutPage() {
           <div className="team-grid">
             {TEAM.map((member) => (
               <div key={member.name} className="team-card">
-                <div className="team-avatar">{member.name.charAt(0)}</div>
-                <div className="team-name">{member.name}</div>
-                <div className="team-role">{member.role}</div>
-                <div className="team-bio">{member.bio}</div>
-                <div className="team-social">
-                  {member.social.github && (
-                    <a href={member.social.github} target="_blank" rel="noopener noreferrer">GitHub ↗</a>
-                  )}
-                  {member.social.linkedin && member.social.linkedin !== '#' && (
-                    <a href={member.social.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
-                  )}
-                  {member.social.twitter && member.social.twitter !== '#' && (
-                    <a href={member.social.twitter} target="_blank" rel="noopener noreferrer">Twitter ↗</a>
-                  )}
+                <div className="team-card-photo">
+                  <div className="team-card-photo-placeholder">
+                    {member.name.charAt(0)}
+                  </div>
+                </div>
+                <div className="team-card-body">
+                  <div className="team-card-pattern"><span /></div>
+                  <div className="tc-corner tc-tl" />
+                  <div className="tc-corner tc-tr" />
+                  <div className="tc-corner tc-bl" />
+                  <div className="tc-corner tc-br" />
+
+                  <div className="team-card-top">
+                    <div className="team-card-quote">{member.bio}</div>
+                    <div className="team-card-attribution">{member.name}, {member.role}</div>
+                  </div>
+
+                  <div className="team-card-divider" />
+
+                  <div className="team-card-bottom">
+                    <div>
+                      <div className="team-card-role-badge">{member.role}</div>
+                      <div className="team-card-bio">{member.detail}</div>
+                    </div>
+                    <div className="team-card-links">
+                      {member.social.github && member.social.github !== '#' && (
+                        <a href={member.social.github} target="_blank" rel="noopener noreferrer" className="team-card-link">
+                          GitHub ↗
+                        </a>
+                      )}
+                      {member.social.linkedin && member.social.linkedin !== '#' && (
+                        <a href={member.social.linkedin} target="_blank" rel="noopener noreferrer" className="team-card-link">
+                          LinkedIn ↗
+                        </a>
+                      )}
+                      {member.social.twitter && member.social.twitter !== '#' && (
+                        <a href={member.social.twitter} target="_blank" rel="noopener noreferrer" className="team-card-link">
+                          X ↗
+                        </a>
+                      )}
+                      {member.email && (
+                        <a href={`mailto:${member.email}`} className="team-card-link team-card-link-email">
+                          Email ↗
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
