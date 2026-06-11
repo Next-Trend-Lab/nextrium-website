@@ -140,8 +140,12 @@ export default function ApplicationsClient({ applications: initial }: Applicatio
                   {selected.cv_url && (
                     <div>
                       <div className="detail-section-title">CV / Resume</div>
-                      <a href={selected.cv_url} target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize: '13px', color: 'var(--orange)', textDecoration: 'underline' }}>
+                      <a
+                        href={`/api/cv-download?path=${encodeURIComponent(selected.cv_url)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: '13px', color: 'var(--orange)', textDecoration: 'underline' }}
+                      >
                         Download CV ↗
                       </a>
                     </div>

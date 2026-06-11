@@ -416,3 +416,60 @@ textarea::placeholder {
   .apps-count-label { font-size: 7px !important; }
   .apps-count-num { font-size: 16px !important; }
 }
+
+/* ── Dashboard list tables → mobile cards ───────────────────── */
+@media (max-width: 768px) {
+  /* Hide table headers on mobile */
+  .dash-table thead { display: none; }
+
+  /* Each row becomes a card */
+  .dash-table tbody { display: flex; flex-direction: column; gap: 0; }
+  .dash-table tr {
+    display: flex; flex-direction: column;
+    padding: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+    background: var(--navy);
+    position: relative;
+  }
+  .dash-table tr:hover { background: rgba(255,255,255,0.02); }
+
+  /* Each cell becomes a block */
+  .dash-table td {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 0 !important;
+    border-bottom: none !important;
+    font-size: 13px !important;
+    color: #E8EDF2 !important;
+  }
+
+  /* Hide less important columns on mobile */
+  .dash-table td:nth-child(3),
+  .dash-table td:nth-child(4),
+  .dash-table td:nth-child(5),
+  .dash-table td:nth-child(6) { display: none; }
+
+  /* Always show first column (title/name) and last column (edit button) */
+  .dash-table td:first-child { font-weight: 500; font-size: 14px !important; }
+  .dash-table td:last-child {
+    display: flex !important;
+    margin-top: 8px;
+    padding-top: 10px !important;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .dash-table td:last-child .dash-edit-link {
+    width: 100%;
+    text-align: center;
+    padding: 10px 16px !important;
+    font-size: 10px !important;
+  }
+
+  /* Second column -- status badge row */
+  .dash-table td:nth-child(2) {
+    display: flex !important;
+    margin-top: 6px;
+  }
+
+  /* Table wrap -- remove horizontal scroll since we use cards */
+  .dash-table-wrap { overflow-x: unset; }
+  .dash-table { min-width: unset !important; width: 100%; }
+}
