@@ -54,8 +54,12 @@ export default function RichTextEditor({ content, onChange, placeholder = 'Start
   const [youtubeUrl,       setYoutubeUrl]       = useState('')
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3, 4] } }),
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3, 4] },
+        link: false,
+      }),
       Image.configure({ inline: false, allowBase64: false }),
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'editor-link' } }),
       Table.configure({ resizable: true }),

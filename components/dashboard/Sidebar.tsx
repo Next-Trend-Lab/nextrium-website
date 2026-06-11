@@ -8,6 +8,7 @@ const NAV_GROUPS = [
   {
     label: 'Content',
     items: [
+      { label: 'Overview', href: '/dashboard',          icon: '◈' },
       { label: 'Posts',    href: '/dashboard/posts',    icon: '✦' },
       { label: 'Products', href: '/dashboard/products', icon: '◈' },
       { label: 'Events',   href: '/dashboard/events',   icon: '◉' },
@@ -101,7 +102,9 @@ export default function Sidebar() {
             <div key={group.label} className="sidebar-group">
               <div className="sidebar-group-label">{group.label}</div>
               {group.items.map((item) => {
-                const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                const isActive = item.href === '/dashboard'
+                  ? pathname === '/dashboard'
+                  : pathname === item.href || pathname.startsWith(item.href + '/')
                 return (
                   <Link
                     key={item.href}
