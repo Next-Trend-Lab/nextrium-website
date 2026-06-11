@@ -394,3 +394,25 @@ textarea::placeholder {
   font-size: 14px !important;
   color: #D0D8E4 !important;
 }
+
+/* ── Dashboard mobile ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .dash-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .dash-table { min-width: 600px; }
+  .prod-editor-layout,
+  .event-editor-layout,
+  .role-editor-layout,
+  .post-editor-layout,
+  .proj-editor-layout,
+  .team-editor-layout,
+  .apps-layout,
+  .contact-layout { grid-template-columns: 1fr !important; }
+  .prod-editor-sidebar,
+  .event-editor-sidebar,
+  .role-editor-sidebar,
+  .post-editor-sidebar,
+  .proj-editor-sidebar,
+  .team-editor-sidebar { position: static !important; }
+  .apps-count-label { font-size: 7px !important; }
+  .apps-count-num { font-size: 16px !important; }
+}
