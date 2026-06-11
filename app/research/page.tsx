@@ -73,13 +73,19 @@ export default async function ResearchPage() {
         .research-featured:hover .research-read-link { gap: 10px; }
 
         /* Grid */
-        .research-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(255,255,255,0.06); margin-top: 1px; }
-        .research-card { background: var(--navy); padding: 32px; display: flex; flex-direction: column; gap: 14px; text-decoration: none; position: relative; transition: background var(--transition-base); }
-        .research-card::before, .research-card::after { content: ''; position: absolute; width: 10px; height: 10px; border-color: rgba(219,103,39,0); border-style: solid; transition: border-color var(--transition-slow); }
+        .research-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 40px; }
+        .research-card { background: var(--navy); display: flex; flex-direction: column; text-decoration: none; position: relative; transition: background var(--transition-base); overflow: hidden; }
+        .research-card::before, .research-card::after { content: ''; position: absolute; width: 10px; height: 10px; border-color: rgba(219,103,39,0); border-style: solid; transition: border-color var(--transition-slow); z-index: 2; }
         .research-card::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
         .research-card::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
         .research-card:hover { background: var(--navy-mid); }
         .research-card:hover::before, .research-card:hover::after { border-color: var(--orange); }
+        .research-card-image { width: 100%; aspect-ratio: 16/9; overflow: hidden; background: var(--navy-mid); flex-shrink: 0; position: relative; }
+        .research-card-image img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform var(--transition-slow); }
+        .research-card:hover .research-card-image img { transform: scale(1.04); }
+        .research-card-image-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--navy-mid); position: relative; overflow: hidden; }
+        .research-card-image-placeholder::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(74,111,165,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(74,111,165,0.08) 1px, transparent 1px); background-size: 24px 24px; }
+        .research-card-body { padding: 24px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
         .research-card-title { font-family: var(--font-exo2); font-weight: 700; font-size: 17px; color: var(--white); letter-spacing: -0.2px; line-height: 1.3; flex: 1; }
         .research-card-excerpt { font-size: 13px; color: var(--grey-mid); line-height: 1.65; }
         .research-card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: auto; }
@@ -96,7 +102,8 @@ export default async function ResearchPage() {
         .research-cta { margin-top: 40px; }
         .research-cta a { max-width: 100% !important; width: 100% !important; }
 
-        @media (max-width: 900px) { .research-hero-inner { grid-template-columns: 1fr; gap: 32px; } .research-featured { grid-template-columns: 1fr; } .research-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) { .research-hero-inner { grid-template-columns: 1fr; gap: 32px; } .research-featured { grid-template-columns: 1fr; } .research-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 600px) { .research-grid { grid-template-columns: 1fr; } }
       `}</style>
 
       <Navbar />
@@ -166,16 +173,26 @@ export default async function ResearchPage() {
                 <div className="research-grid">
                   {rest.map((post) => (
                     <Link key={post.slug} href={`/blog/${post.slug}`} className="research-card">
-                      <span className="research-badge">Research</span>
-                      <div className="research-card-title">{post.title}</div>
-                      {post.excerpt && (
-                        <div className="research-card-excerpt">{post.excerpt}</div>
-                      )}
-                      <div className="research-card-footer">
-                        <span className="research-card-meta">
-                          {post.published_at ? formatDate(post.published_at) : ''} · {post.author}
-                        </span>
-                        <span className="research-card-arrow">↗</span>
+                      <div className="research-card-image">
+                        {post.cover_image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={post.cover_image_url} alt={post.title} />
+                        ) : (
+                          <div className="research-card-image-placeholder" />
+                        )}
+                      </div>
+                      <div className="research-card-body">
+                        <span className="research-badge">Research</span>
+                        <div className="research-card-title">{post.title}</div>
+                        {post.excerpt && (
+                          <div className="research-card-excerpt">{post.excerpt}</div>
+                        )}
+                        <div className="research-card-footer">
+                          <span className="research-card-meta">
+                            {post.published_at ? formatDate(post.published_at) : ''} · {post.author}
+                          </span>
+                          <span className="research-card-arrow">↗</span>
+                        </div>
                       </div>
                     </Link>
                   ))}

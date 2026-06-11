@@ -87,14 +87,20 @@ export default function BlogClient({ posts }: BlogClientProps) {
         .blog-featured:hover .blog-read-link { gap: 10px; }
 
         /* Posts grid */
-        .blog-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(255,255,255,0.06); }
-        .blog-card { background: var(--navy); padding: 32px; display: flex; flex-direction: column; gap: 14px; text-decoration: none; position: relative; transition: background var(--transition-base); }
-        .blog-card::before, .blog-card::after { content: ''; position: absolute; width: 10px; height: 10px; border-color: rgba(219,103,39,0); border-style: solid; transition: border-color var(--transition-slow); }
+        .blog-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .blog-card { background: var(--navy); display: flex; flex-direction: column; text-decoration: none; position: relative; transition: background var(--transition-base); overflow: hidden; }
+        .blog-card::before, .blog-card::after { content: ''; position: absolute; width: 10px; height: 10px; border-color: rgba(219,103,39,0); border-style: solid; transition: border-color var(--transition-slow); z-index: 2; }
         .blog-card::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
         .blog-card::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
         .blog-card:hover { background: var(--navy-mid); }
         .blog-card:hover::before, .blog-card:hover::after { border-color: var(--orange); }
-        .blog-card-title { font-family: var(--font-exo2); font-weight: 700; font-size: 18px; color: var(--white); letter-spacing: -0.2px; line-height: 1.3; flex: 1; }
+        .blog-card-image { width: 100%; aspect-ratio: 16/9; overflow: hidden; background: var(--navy-mid); flex-shrink: 0; }
+        .blog-card-image img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform var(--transition-slow); }
+        .blog-card:hover .blog-card-image img { transform: scale(1.04); }
+        .blog-card-image-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--navy-mid); position: relative; overflow: hidden; }
+        .blog-card-image-placeholder::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(219,103,39,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(219,103,39,0.06) 1px, transparent 1px); background-size: 24px 24px; }
+        .blog-card-body { padding: 24px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+        .blog-card-title { font-family: var(--font-exo2); font-weight: 700; font-size: 17px; color: var(--white); letter-spacing: -0.2px; line-height: 1.3; flex: 1; }
         .blog-card-excerpt { font-size: 13px; color: var(--grey-mid); line-height: 1.65; }
         .blog-card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: auto; }
         .blog-card-meta { font-size: 11px; color: var(--grey-dark); font-family: var(--font-mono); letter-spacing: 0.08em; }
@@ -105,8 +111,8 @@ export default function BlogClient({ posts }: BlogClientProps) {
         .blog-empty-title { font-family: var(--font-exo2); font-weight: 700; font-size: 22px; color: var(--white); margin-bottom: 12px; }
         .blog-empty-sub { font-size: 14px; color: var(--grey-mid); }
 
-        @media (max-width: 900px) { .blog-hero-inner { grid-template-columns: 1fr; gap: 32px; } .blog-featured { grid-template-columns: 1fr; } .blog-grid { grid-template-columns: 1fr; } }
-        @media (max-width: 600px) { .filter-btn { padding: 8px 12px; font-size: 8px; } .blog-featured-body { padding: 28px; } }
+        @media (max-width: 900px) { .blog-hero-inner { grid-template-columns: 1fr; gap: 32px; } .blog-featured { grid-template-columns: 1fr; } .blog-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 600px) { .blog-grid { grid-template-columns: 1fr; } .filter-btn { padding: 8px 12px; font-size: 8px; } .blog-featured-body { padding: 28px; } }
       `}</style>
 
       <section className="blog-hero">
@@ -190,24 +196,34 @@ export default function BlogClient({ posts }: BlogClientProps) {
               )}
 
               {rest.length > 0 && (
-                <div className="blog-grid" style={{ marginTop: '1px' }}>
+                <div className="blog-grid" style={{ marginTop: '40px' }}>
                   {rest.map((post) => {
                     const ts = TYPE_STYLES[post.post_type]
                     return (
                       <Link key={post.slug} href={`/blog/${post.slug}`} className="blog-card">
-                        <span
-                          className="blog-type-badge"
-                          style={{ background: ts.bg, color: ts.color, border: `1px solid ${ts.color}33` }}
-                        >
-                          {TYPE_FILTERS.find((f) => f.value === post.post_type)?.label}
-                        </span>
-                        <div className="blog-card-title">{post.title}</div>
-                        {post.excerpt && <div className="blog-card-excerpt">{post.excerpt}</div>}
-                        <div className="blog-card-footer">
-                          <span className="blog-card-meta">
-                            {post.published_at ? formatDate(post.published_at) : ''} · {post.author}
+                        <div className="blog-card-image">
+                          {post.cover_image_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={post.cover_image_url} alt={post.title} />
+                          ) : (
+                            <div className="blog-card-image-placeholder" />
+                          )}
+                        </div>
+                        <div className="blog-card-body">
+                          <span
+                            className="blog-type-badge"
+                            style={{ background: ts.bg, color: ts.color, border: `1px solid ${ts.color}33` }}
+                          >
+                            {TYPE_FILTERS.find((f) => f.value === post.post_type)?.label}
                           </span>
-                          <span className="blog-card-arrow">↗</span>
+                          <div className="blog-card-title">{post.title}</div>
+                          {post.excerpt && <div className="blog-card-excerpt">{post.excerpt}</div>}
+                          <div className="blog-card-footer">
+                            <span className="blog-card-meta">
+                              {post.published_at ? formatDate(post.published_at) : ''} · {post.author}
+                            </span>
+                            <span className="blog-card-arrow">↗</span>
+                          </div>
                         </div>
                       </Link>
                     )
