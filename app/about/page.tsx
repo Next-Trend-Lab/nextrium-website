@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import Navbar from '@/components/public/Navbar'
 import Footer from '@/components/public/Footer'
 import SectionTag from '@/components/shared/SectionTag'
@@ -322,9 +323,12 @@ export default function AboutPage() {
           .about-hero-inner  { grid-template-columns: 1fr; gap: 32px; }
           .story-grid        { grid-template-columns: 1fr; gap: 40px; }
           .details-grid      { grid-template-columns: 1fr; gap: 48px; }
-          .team-card { grid-template-columns: 1fr; min-height: auto; }
+          .team-grid { gap: 16px; }
+          .team-card { grid-template-columns: 1fr; height: auto; min-height: auto; }
+          .team-card-photo { min-height: 320px; max-height: 320px; }
+          .team-card-photo img { height: 320px; max-height: 320px; }
+          .team-card-body { padding: 32px 24px; min-height: auto; }
           .team-card-photo-placeholder { min-height: 320px; font-size: 64px; }
-          .team-card-body { padding: 36px 28px; }
           .about-cta-inner   { grid-template-columns: 1fr; gap: 40px; }
           .mission-block     { padding: 40px 32px; }
         }
@@ -522,9 +526,15 @@ export default function AboutPage() {
             ))}
           </div>
           <div className="team-note">
-            <span className="team-note-text">
-              The team grows as NexTrium grows. More members coming.
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+              <span className="team-note-text">
+                The team grows as NexTrium grows. Meet our core team members.
+              </span>
+              <Link href="/team" style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--orange)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>Meet the core team</span>
+                <span>→</span>
+              </Link>
+            </div>
           </div>
         </div>
       </section>

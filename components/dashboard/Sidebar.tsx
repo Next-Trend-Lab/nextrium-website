@@ -13,6 +13,7 @@ const NAV_GROUPS = [
       { label: 'Events',   href: '/dashboard/events',   icon: '◉' },
       { label: 'Roles',              href: '/dashboard/roles',              icon: '◎' },
       { label: 'Community Projects', href: '/dashboard/community-projects', icon: '◈' },
+      { label: 'Team',               href: '/dashboard/team',               icon: '◈' },
     ],
   },
   {

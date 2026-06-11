@@ -1,27 +1,32 @@
 import Link from 'next/link'
+import { createServiceClient } from '@/lib/supabase/server'
 
-const FOOTER_LINKS = {
-  Company: [
-    { label: 'About',   href: '/about'      },
-    { label: 'Team',    href: '/about#team' },
-    { label: 'The Hub', href: '/hub'        },
-    { label: 'Contact', href: '/contact'    },
-  ],
-  Products: [
-    { label: 'All builds', href: '/products'           },
-    { label: 'Zivana',     href: '/products/zivana'    },
-    { label: 'Sovela',     href: '/products/sovela'    },
-    { label: 'Accordiax',  href: '/products/accordiax' },
-  ],
-  Resources: [
-    { label: 'Services', href: '/services' },
-    { label: 'Events',   href: '/events'   },
-    { label: 'Blog',     href: '/blog'     },
-    { label: 'Careers',  href: '/careers'  },
-  ],
+const COMPANY_LINKS = [
+  { label: 'About',   href: '/about'   },
+  { label: 'Team',    href: '/team'    },
+  { label: 'The Hub', href: '/hub'     },
+  { label: 'Contact', href: '/contact' },
+]
+
+const RESOURCE_LINKS = [
+  { label: 'Services', href: '/services' },
+  { label: 'Events',   href: '/events'   },
+  { label: 'Blog',     href: '/blog'     },
+  { label: 'Careers',  href: '/careers'  },
+]
+
+async function getFooterProducts(): Promise<{ slug: string; name: string }[]> {
+  const supabase = createServiceClient()
+  const { data } = await supabase
+    .from('products')
+    .select('slug, name')
+    .order('sort_order', { ascending: true })
+    .limit(5)
+  return (data ?? []) as { slug: string; name: string }[]
 }
 
-export default function Footer() {
+export default async function Footer() {
+  const products = await getFooterProducts()
   const year = new Date().getFullYear()
 
   return (
@@ -124,18 +129,31 @@ export default function Footer() {
                 Lagos, Nigeria — 100223
               </address>
             </div>
-            {Object.entries(FOOTER_LINKS).map(([group, links]) => (
-              <div key={group}>
-                <div className="footer-col-title">{group}</div>
-                <ul className="footer-links">
-                  {links.map((link) => (
-                    <li key={link.href}>
-                      <Link href={link.href}>{link.label}</Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            <div>
+              <div className="footer-col-title">Company</div>
+              <ul className="footer-links">
+                {COMPANY_LINKS.map((link) => (
+                  <li key={link.href}><Link href={link.href}>{link.label}</Link></li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <div className="footer-col-title">Products</div>
+              <ul className="footer-links">
+                <li><Link href="/products">All builds</Link></li>
+                {products.map((p) => (
+                  <li key={p.slug}><Link href={`/products/${p.slug}`}>{p.name}</Link></li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <div className="footer-col-title">Resources</div>
+              <ul className="footer-links">
+                {RESOURCE_LINKS.map((link) => (
+                  <li key={link.href}><Link href={link.href}>{link.label}</Link></li>
+                ))}
+              </ul>
+            </div>
           </div>
           <div className="footer-bottom">
             <span className="footer-copy">

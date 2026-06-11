@@ -265,40 +265,52 @@ export type Database = {
       team_members: {
         Row: {
           id: string
+          slug: string
           name: string
           role: string
           bio: string | null
-          avatar_url: string | null
+          detail: string | null
+          photo_url: string | null
+          email: string | null
           github_url: string | null
           linkedin_url: string | null
           twitter_url: string | null
           is_active: boolean
           sort_order: number
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
+          slug: string
           name: string
           role: string
           bio?: string | null
-          avatar_url?: string | null
+          detail?: string | null
+          photo_url?: string | null
+          email?: string | null
           github_url?: string | null
           linkedin_url?: string | null
           twitter_url?: string | null
           is_active?: boolean
           sort_order?: number
           created_at?: string
+          updated_at?: string
         }
         Update: {
+          slug?: string
           name?: string
           role?: string
           bio?: string | null
-          avatar_url?: string | null
+          detail?: string | null
+          photo_url?: string | null
+          email?: string | null
           github_url?: string | null
           linkedin_url?: string | null
           twitter_url?: string | null
           is_active?: boolean
           sort_order?: number
+          updated_at?: string
         }
       }
       contact_submissions: {
@@ -462,3 +474,4 @@ export interface CommunityProject {
   created_at:  string
   updated_at:  string
 }
+

@@ -124,7 +124,7 @@ export default function ProductsClient({ products }: ProductsClientProps) {
               </div>
             ) : (
               filtered.map((product) => (
-                <Link key={product.slug} href={`/products/${product.slug}`} className="product-card">
+                <div key={product.slug} className="product-card" onClick={() => window.location.href = `/products/${product.slug}`} style={{ cursor: 'pointer' }}>
                   {product.cover_image_url && (
                     <div className="product-card-image-wrap">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -163,7 +163,7 @@ export default function ProductsClient({ products }: ProductsClientProps) {
                     </div>
                     <span className="product-arrow">↗</span>
                   </div>
-                </Link>
+                </div>
               ))
             )}
           </div>
