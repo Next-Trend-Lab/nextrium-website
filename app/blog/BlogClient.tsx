@@ -142,6 +142,16 @@ export default function BlogClient({ posts }: BlogClientProps) {
             ))}
           </div>
 
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '48px', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--grey-mid)' }}>
+              Looking for in-depth research notes?
+            </span>
+            <Link href="/research" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '12px 20px', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', fontSize: '13px', fontFamily: 'var(--font-dm)', textDecoration: 'none', transition: 'border-color 0.15s ease, background 0.15s ease', whiteSpace: 'nowrap' }}>
+              <span>View research notes</span>
+              <span>→</span>
+            </Link>
+          </div>
+
           {filtered.length === 0 ? (
             <div className="blog-empty">
               <div className="blog-empty-title">No posts in this category yet.</div>

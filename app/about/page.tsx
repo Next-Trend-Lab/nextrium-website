@@ -435,7 +435,7 @@ export default function AboutPage() {
                   ['Type', 'Private Company Limited by Shares'],
                   ['Regulator', 'Corporate Affairs Commission, Nigeria'],
                   ['Address', '69 Abeokuta Street, Ilaje Bariga, Lagos 100223'],
-                  ['Email', 'abdulbasit@nextrium.org'],
+                  ['Email', 'hello@nextrium.org'],
                   ['Website', 'nextrium.org'],
                 ].map(([label, value]) => (
                   <div key={label} className="details-row">
@@ -530,7 +530,7 @@ export default function AboutPage() {
               <span className="team-note-text">
                 The team grows as NexTrium grows. Meet our core team members.
               </span>
-              <Link href="/team" style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--orange)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Link href="/team" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '12px 20px', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', fontSize: '13px', fontFamily: 'var(--font-dm)', textDecoration: 'none', transition: 'border-color 0.15s ease, background 0.15s ease', whiteSpace: 'nowrap' }}>
                 <span>Meet the core team</span>
                 <span>→</span>
               </Link>

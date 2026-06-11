@@ -9,10 +9,11 @@ const COMPANY_LINKS = [
 ]
 
 const RESOURCE_LINKS = [
-  { label: 'Services', href: '/services' },
-  { label: 'Events',   href: '/events'   },
-  { label: 'Blog',     href: '/blog'     },
-  { label: 'Careers',  href: '/careers'  },
+  { label: 'Services',  href: '/services'  },
+  { label: 'Events',    href: '/events'    },
+  { label: 'Blog',      href: '/blog'      },
+  { label: 'Research',  href: '/research'  },
+  { label: 'Careers',   href: '/careers'   },
 ]
 
 async function getFooterProducts(): Promise<{ slug: string; name: string }[]> {
