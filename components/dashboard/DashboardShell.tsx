@@ -1,11 +1,9 @@
 'use client'
 
 import Sidebar from './Sidebar'
-import { DashboardProvider, useDashboard } from './DashboardContext'
+import { DashboardProvider } from './DashboardContext'
 
 function ShellInner({ children }: { children: React.ReactNode }) {
-  const { sidebarOpen, closeSidebar } = useDashboard()
-
   return (
     <>
       <style>{`
@@ -15,7 +13,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         @media (max-width: 768px) { .dash-content { padding: 16px; } }
       `}</style>
       <div className="dash-shell">
-        <Sidebar open={sidebarOpen} onClose={closeSidebar} />
+        <Sidebar />
         <div className="dash-main">{children}</div>
       </div>
     </>
