@@ -138,6 +138,7 @@ export type Database = {
           youtube_url: string | null
           social_links: string[] | null
           registration_url: string | null
+          gallery: string[] | null
           created_at: string
           updated_at: string
         }
@@ -157,6 +158,7 @@ export type Database = {
           youtube_url?: string | null
           social_links?: string[] | null
           registration_url?: string | null
+          gallery?: string[] | null
           created_at?: string
           updated_at?: string
         }
@@ -175,6 +177,7 @@ export type Database = {
           youtube_url?: string | null
           social_links?: string[] | null
           registration_url?: string | null
+          gallery?: string[] | null
           updated_at?: string
         }
       }

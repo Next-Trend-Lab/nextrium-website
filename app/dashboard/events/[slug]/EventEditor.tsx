@@ -46,6 +46,7 @@ export default function EventEditor({ event }: EventEditorProps) {
   const [isHubEvent,  setIsHubEvent]  = useState(event?.is_hub_event       ?? true)
   const [coverColor,  setCoverColor]  = useState(event?.cover_color        ?? '#DB6727')
   const [coverImage,  setCoverImage]  = useState(event?.cover_image_url    ?? '')
+  const [gallery,     setGallery]     = useState<string[]>(event?.gallery   ?? [])
   const [youtubeUrl,       setYoutubeUrl]       = useState(event?.youtube_url        ?? '')
   const [registrationUrl,  setRegistrationUrl]  = useState(event?.registration_url  ?? '')
   const [socialLinks,      setSocialLinks]      = useState((event?.social_links ?? []).join('\n'))
@@ -79,6 +80,7 @@ export default function EventEditor({ event }: EventEditorProps) {
       is_hub_event:    isHubEvent,
       cover_color:     coverColor,
       cover_image_url: coverImage.trim() || null,
+      gallery,
       youtube_url:      youtubeUrl.trim() || null,
       registration_url: registrationUrl.trim() || null,
       social_links:     socialLinks.split('\n').map((s) => s.trim()).filter(Boolean),
@@ -287,6 +289,34 @@ export default function EventEditor({ event }: EventEditorProps) {
                   onChange={setCoverImage}
                   folder="events"
                 />
+              </div>
+
+              <div className="editor-field">
+                <label className="editor-label">Photo gallery</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {gallery.map((url, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--navy-mid)', padding: '8px 12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt={`Gallery ${i + 1}`} style={{ width: '64px', height: '48px', objectFit: 'cover', flexShrink: 0 }} />
+                      <span style={{ flex: 1, fontSize: '11px', color: 'var(--grey-mid)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
+                      <button
+                        type="button"
+                        onClick={() => setGallery(gallery.filter((_, idx) => idx !== i))}
+                        style={{ background: 'none', border: '1px solid rgba(232,69,69,0.3)', color: 'var(--error)', cursor: 'pointer', padding: '4px 8px', fontSize: '10px', flexShrink: 0 }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <CoverImageUpload
+                    value=""
+                    onChange={(url) => { if (url) setGallery((prev) => [...prev, url]) }}
+                    folder="events/gallery"
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--grey-dark)' }}>
+                    Each upload adds a photo to the gallery. Upload multiple times to add more.
+                  </span>
+                </div>
               </div>
 
               <div className="editor-field">
