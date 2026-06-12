@@ -3,6 +3,7 @@ import Header from '@/components/dashboard/Header'
 import Link from 'next/link'
 import type { Post } from '@/lib/types/database'
 
+export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Posts' }
 
 const TYPE_LABELS: Record<Post['post_type'], string> = {

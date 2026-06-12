@@ -3,6 +3,7 @@ import Header from '@/components/dashboard/Header'
 import Link from 'next/link'
 import type { NTEvent } from '@/lib/types/database'
 
+export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Events' }
 
 const TYPE_LABELS: Record<NTEvent['event_type'], string> = {

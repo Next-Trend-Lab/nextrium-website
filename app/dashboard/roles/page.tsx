@@ -3,6 +3,7 @@ import Header from '@/components/dashboard/Header'
 import Link from 'next/link'
 import type { Role } from '@/lib/types/database'
 
+export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Roles' }
 
 const TYPE_LABELS: Record<Role['type'], string> = {

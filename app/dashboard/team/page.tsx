@@ -3,6 +3,7 @@ import Header from '@/components/dashboard/Header'
 import Link from 'next/link'
 import type { TeamMember } from '@/lib/types/database'
 
+export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Team' }
 
 async function getTeamMembers(): Promise<TeamMember[]> {

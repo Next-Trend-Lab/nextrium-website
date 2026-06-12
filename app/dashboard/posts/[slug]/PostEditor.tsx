@@ -110,8 +110,8 @@ export default function PostEditor({ post }: PostEditorProps) {
     const supabase = createClient()
     const { error: err } = await supabase.from('posts').delete().eq('slug', post.slug)
     if (err) { setError(err.message); setDeleting(false); return }
-    router.push('/dashboard/posts')
     router.refresh()
+    router.push('/dashboard/posts')
   }
 
   const ActionButtons = (
