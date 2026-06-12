@@ -59,6 +59,7 @@ export default function RichTextEditor({ content, onChange, placeholder = 'Start
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4] },
         link: false,
+        underline: false,
       }),
       Image.configure({ inline: false, allowBase64: false }),
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'editor-link' } }),
