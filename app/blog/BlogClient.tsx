@@ -66,13 +66,13 @@ export default function BlogClient({ posts }: BlogClientProps) {
         .filter-btn.active { background: var(--orange); color: var(--white); border-color: var(--orange); }
 
         /* Featured post */
-        .blog-featured { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: rgba(255,255,255,0.06); margin-bottom: 48px; text-decoration: none; position: relative; }
+        .blog-featured { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: rgba(255,255,255,0.06); margin-bottom: 48px; text-decoration: none; position: relative; align-items: stretch; }
         .blog-featured::before, .blog-featured::after { content: ''; position: absolute; width: 14px; height: 14px; border-color: rgba(219,103,39,0); border-style: solid; transition: border-color var(--transition-slow); z-index: 2; }
         .blog-featured::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
         .blog-featured::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
         .blog-featured:hover::before, .blog-featured:hover::after { border-color: var(--orange); }
-        .blog-featured-media { background: var(--navy-mid); position: relative; min-height: 320px; overflow: hidden; }
-        .blog-featured-media img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform var(--transition-slow); }
+        .blog-featured-media { background: #071628; overflow: hidden; }
+        .blog-featured-media img { width: 100%; height: 100%; object-fit: cover; object-position: left top; display: block; transition: transform var(--transition-slow); }
         .blog-featured:hover .blog-featured-media img { transform: scale(1.04); }
         .blog-featured-media-placeholder { width: 100%; height: 100%; min-height: 320px; display: flex; align-items: center; justify-content: center; background: var(--navy-mid); position: relative; overflow: hidden; }
         .blog-featured-media-placeholder::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(219,103,39,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(219,103,39,0.08) 1px, transparent 1px); background-size: 32px 32px; }
