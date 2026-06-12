@@ -3,6 +3,7 @@ import Header from '@/components/dashboard/Header'
 import Link from 'next/link'
 import type { CommunityProject } from '@/lib/types/database'
 
+export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Community Projects' }
 
 async function getProjects(): Promise<CommunityProject[]> {
