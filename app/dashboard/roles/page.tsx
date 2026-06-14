@@ -18,7 +18,7 @@ async function getRoles(): Promise<Role[]> {
   const { data } = await supabase
     .from('roles')
     .select('*')
-    .order('created_at', { ascending: false })
+    .order('sort_order', { ascending: true })
   return data ?? []
 }
 

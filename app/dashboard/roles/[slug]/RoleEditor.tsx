@@ -174,9 +174,14 @@ export default function RoleEditor({ role }: RoleEditorProps) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div className="editor-field">
                 <label className="editor-label" htmlFor="team">Team</label>
-                <input className="editor-input" id="team" type="text"
-                  placeholder="e.g. Engineering"
-                  value={team} onChange={(e) => setTeam(e.target.value)} />
+                <select className="editor-select" value={team} onChange={(e) => setTeam(e.target.value)}>
+                  <option value="">Select team</option>
+                  <option value="Engineering">Engineering</option>
+                  <option value="Product and Design">Product and Design</option>
+                  <option value="Research and Strategy">Research and Strategy</option>
+                  <option value="Community and Hub">Community and Hub</option>
+                  <option value="Operations">Operations</option>
+                </select>
               </div>
               <div className="editor-field">
                 <label className="editor-label" htmlFor="location">Location</label>
