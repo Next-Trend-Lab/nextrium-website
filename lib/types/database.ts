@@ -390,6 +390,7 @@ export type Database = {
           description: string
           requirements: string[]
           is_active: boolean
+          sort_order: number
           closes_at: string | null
           created_at: string
           updated_at: string
@@ -404,6 +405,7 @@ export type Database = {
           description: string
           requirements?: string[]
           is_active?: boolean
+          sort_order?: number
           closes_at?: string | null
           created_at?: string
           updated_at?: string
@@ -417,6 +419,7 @@ export type Database = {
           description?: string
           requirements?: string[]
           is_active?: boolean
+          sort_order?: number
           closes_at?: string | null
           updated_at?: string
         }

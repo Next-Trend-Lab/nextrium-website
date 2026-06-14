@@ -34,6 +34,7 @@ export default function RoleEditor({ role }: RoleEditorProps) {
   const [description,  setDescription]  = useState(role?.description  ?? '')
   const [requirements, setRequirements] = useState((role?.requirements ?? []).join('\n'))
   const [isActive,     setIsActive]     = useState(role?.is_active    ?? true)
+  const [sortOrder,    setSortOrder]    = useState(role?.sort_order   ?? 0)
   const [closesAt,     setClosesAt]     = useState(role?.closes_at?.slice(0, 10) ?? '')
 
   const [saving,   setSaving]   = useState(false)
@@ -63,6 +64,7 @@ export default function RoleEditor({ role }: RoleEditorProps) {
       description:  description.trim(),
       requirements: reqArray,
       is_active:    isActive,
+      sort_order:   Number(sortOrder),
       closes_at:    closesAt || null,
       updated_at:   now,
     }
@@ -231,6 +233,17 @@ export default function RoleEditor({ role }: RoleEditorProps) {
                   <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
                   <span className="editor-toggle-track" />
                 </label>
+              </div>
+
+              <div className="editor-field">
+                <label className="editor-label">Sort order</label>
+                <input
+                  className="editor-input"
+                  type="number"
+                  min="0"
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(Number(e.target.value))}
+                />
               </div>
             </div>
 
