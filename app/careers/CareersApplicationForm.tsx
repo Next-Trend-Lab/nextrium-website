@@ -96,6 +96,19 @@ export default function CareersApplicationForm({ roleId }: { roleId?: string }) 
           <input className="form-input" id="cv" name="cv" type="file" accept=".pdf,.doc,.docx"
             style={{ padding: '10px 16px', cursor: 'pointer', color: 'var(--grey-mid)' }} />
         </div>
+        <div className="form-group">
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              name="pledge_consent"
+              required
+              style={{ marginTop: '3px', accentColor: 'var(--orange)', width: '16px', height: '16px', flexShrink: 0, cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: '13px', color: 'var(--grey-mid)', lineHeight: 1.6 }}>
+              I have read the NexTrium Contributor Pledge and confirm all six points above. I understand this is a Founding Team Contributor role with deferred compensation and no co-founder status.
+            </span>
+          </label>
+        </div>
         <button type="submit" className="form-submit" disabled={formState === 'submitting'}>
           <span>{formState === 'submitting' ? 'Sending...' : 'Send application'}</span>
           <span>{formState === 'submitting' ? '...' : '→'}</span>

@@ -34,12 +34,20 @@ const VALUES = [
   },
 ]
 
+const PLEDGE_POINTS = [
+  'You have read and understood that NexTrium is pre-revenue and compensation is deferred.',
+  'You understand that your contribution will be formally documented and recognised.',
+  'You agree to keep all internal product, technical, and strategic information confidential.',
+  'You understand that intellectual property created during your contribution belongs to NexTrium unless separately agreed in writing.',
+  'You are applying because you believe in the mission, not because you expect immediate financial return.',
+  'You understand that this is a Founding Team Contributor role and carries no co-founder status, equity, or shareholding.',
+]
+
 async function getRoles(): Promise<Role[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('roles')
     .select('*')
-    .eq('is_published', true)
     .eq('is_active', true)
     .order('created_at', { ascending: false })
   if (error || !data) return []
@@ -74,6 +82,26 @@ export default async function CareersPage() {
         .value-card:hover::before { transform: scaleX(1); }
         .value-title { font-family: var(--font-exo2); font-weight: 700; font-size: 18px; color: var(--navy-deep); letter-spacing: -0.2px; line-height: 1.25; }
         .value-desc { font-size: 14px; color: var(--grey-dark); line-height: 1.75; }
+        .pledge-section { background: var(--off-white); padding: var(--section-py) 0; border-bottom: 1px solid var(--grey-light); }
+        .pledge-wrap { display: flex; flex-direction: column; gap: 48px; }
+        .pledge-header { display: flex; flex-direction: column; gap: 0; }
+        .pledge-title { font-family: var(--font-exo2); font-weight: 800; font-size: clamp(28px, 3.5vw, 44px); color: var(--navy-deep); letter-spacing: -1px; line-height: 1.05; }
+        .pledge-body { display: flex; flex-direction: column; gap: 40px; }
+        .pledge-intro { display: flex; flex-direction: column; gap: 16px; max-width: 100%; }
+        .pledge-intro p { font-size: 16px; color: var(--grey-dark); line-height: 1.8; }
+        .pledge-blocks { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--grey-light); }
+        .pledge-block { background: var(--white); padding: 32px; display: flex; flex-direction: column; gap: 12px; position: relative; }
+        .pledge-block::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--orange); transform: scaleX(0); transform-origin: left; transition: transform var(--transition-slow); }
+        .pledge-block:hover::before { transform: scaleX(1); }
+        .pledge-block-title { font-family: var(--font-exo2); font-weight: 700; font-size: 16px; color: var(--navy-deep); letter-spacing: -0.2px; }
+        .pledge-block-text { font-size: 14px; color: var(--grey-dark); line-height: 1.75; }
+        .pledge-confirmation { background: var(--navy-deep); padding: 40px; display: flex; flex-direction: column; gap: 24px; }
+        .pledge-confirmation-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--orange); }
+        .pledge-points { display: flex; flex-direction: column; gap: 0; }
+        .pledge-point { display: grid; grid-template-columns: 48px 1fr; gap: 16px; align-items: start; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .pledge-point:first-child { border-top: 1px solid rgba(255,255,255,0.06); }
+        .pledge-point-num { font-family: var(--font-mono); font-size: 10px; color: var(--orange); letter-spacing: 0.15em; padding-top: 2px; }
+        .pledge-point-text { font-size: 14px; color: var(--grey-mid); line-height: 1.7; }
         .roles-section { background: var(--navy-deep); padding: var(--section-py) 0; }
         .roles-list { display: flex; flex-direction: column; gap: 1px; background: rgba(255,255,255,0.06); }
         .role-row { background: var(--navy); display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: center; padding: 32px 40px; text-decoration: none; transition: background var(--transition-base); position: relative; }
@@ -99,7 +127,7 @@ export default async function CareersPage() {
         .open-app-title { font-family: var(--font-exo2); font-weight: 800; font-size: clamp(28px, 3.5vw, 44px); color: var(--white); letter-spacing: -1px; line-height: 1.05; margin-bottom: 16px; }
         .open-app-title em { font-style: normal; color: var(--orange); }
         .open-app-desc { font-size: 15px; color: var(--grey-mid); line-height: 1.75; }
-        @media (max-width: 900px) { .careers-hero-inner { grid-template-columns: 1fr; gap: 32px; } .values-grid { grid-template-columns: 1fr; } .role-row { grid-template-columns: 1fr; gap: 12px; padding: 24px; } .open-app-grid { grid-template-columns: 1fr; gap: 48px; } }
+        @media (max-width: 900px) { .careers-hero-inner { grid-template-columns: 1fr; gap: 32px; } .values-grid { grid-template-columns: 1fr; } .pledge-blocks { grid-template-columns: 1fr; } .pledge-confirmation { padding: 28px; } .role-row { grid-template-columns: 1fr; gap: 12px; padding: 24px; } .open-app-grid { grid-template-columns: 1fr; gap: 48px; } }
       `}</style>
 
       <Navbar />
@@ -135,6 +163,52 @@ export default async function CareersPage() {
                 <div className="value-desc">{v.description}</div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="pledge-section">
+        <div className="container">
+          <div className="pledge-wrap">
+            <div className="pledge-header">
+              <SectionTag label="Before you apply" />
+              <h2 className="pledge-title">Read this first.</h2>
+            </div>
+            <div className="pledge-body">
+              <div className="pledge-intro">
+                <p>NexTrium Global Innovations Ltd is an early-stage technology company incorporated in Nigeria in April 2026. We build products, infrastructure, and ventures designed to address real problems in underserved markets. Our work spans decentralised systems, financial inclusion, trust infrastructure, and community-driven technology. The products we are building today are the beginning of a much larger body of work.</p>
+                <p>We are pre-revenue. We do not have the money to pay salaries right now. We are being honest about that because we believe the people who join us deserve to know exactly what they are walking into.</p>
+              </div>
+              <div className="pledge-blocks">
+                <div className="pledge-block">
+                  <div className="pledge-block-title">What this is</div>
+                  <p className="pledge-block-text">This is an opportunity to join the founding team of a company that is building something real. The work you do here will matter. It will ship. It will be used by real people. Your name will be on it. Contributors who join at this stage are not employees. You are early team members: people who are choosing to build with us before the money arrives, because they believe the work is worth doing.</p>
+                </div>
+                <div className="pledge-block">
+                  <div className="pledge-block-title">What we commit to you</div>
+                  <p className="pledge-block-text">We will document every contribution formally. Your role, your work, your commitment, and the terms of your recognition will be written down and signed. When NexTrium generates revenue or raises funding, early contributors will be the first people we bring into a formal compensation conversation. This is not a vague promise; it will be in your contributor agreement. You will be credited publicly as a founding team member with a direct line to the founders.</p>
+                </div>
+                <div className="pledge-block">
+                  <div className="pledge-block-title">What we ask of you</div>
+                  <p className="pledge-block-text">Genuine commitment to the role you are applying for. Confidentiality: the work we are doing is not yet fully public and we need to protect it. Honesty: if something is not working, tell us. The same standard of work you would bring to any paid role, because the people who will eventually use what we build deserve that.</p>
+                </div>
+                <div className="pledge-block">
+                  <div className="pledge-block-title">What this is not</div>
+                  <p className="pledge-block-text">This is not a co-founder arrangement. Equity, shareholding, and co-founder status are not on the table at this stage. We are not making promises we cannot keep. What we are offering is formal recognition, documented contribution, and a real place in the founding story of a company that intends to grow into something significant.</p>
+                </div>
+              </div>
+              <div className="pledge-confirmation">
+                <div className="pledge-confirmation-title">By submitting an application you confirm that:</div>
+                <div className="pledge-points">
+                  {PLEDGE_POINTS.map((point, i) => (
+                    <div key={i} className="pledge-point">
+                      <span className="pledge-point-num">{String(i + 1).padStart(2, '0')}</span>
+                      <span className="pledge-point-text">{point}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
