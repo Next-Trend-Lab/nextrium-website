@@ -119,8 +119,8 @@ export default function ServicesPage() {
         .services-list-section { background: var(--off-white); padding: var(--section-py) 0; }
         .services-list { display: flex; flex-direction: column; gap: 0; margin-bottom: 0; }
         .service-row {
-          display: grid; grid-template-columns: 80px 1fr 1fr;
-          gap: 48px; align-items: start;
+          display: grid; grid-template-columns: 48px 1fr 280px;
+          gap: 32px; align-items: start;
           padding: 48px 0;
           border-bottom: 1px solid var(--grey-light);
         }
@@ -135,7 +135,7 @@ export default function ServicesPage() {
           letter-spacing: -0.3px; margin-bottom: 16px; line-height: 1.15;
         }
         .service-row-desc { font-size: 15px; color: var(--grey-dark); line-height: 1.75; }
-        .service-row-right { padding-top: 4px; }
+        .service-row-right { padding-top: 4px; width: 100%; }
         .service-deliverables-title {
           font-family: var(--font-mono); font-size: 8.5px;
           letter-spacing: 0.2em; text-transform: uppercase;
@@ -181,12 +181,12 @@ export default function ServicesPage() {
         @media (max-width: 900px) {
           .services-hero-inner { grid-template-columns: 1fr; gap: 32px; }
           .service-row { grid-template-columns: 48px 1fr; gap: 24px; }
-          .service-row-right { grid-column: 2; }
+          .service-row-right { grid-column: 2; width: 100%; }
           .engage-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 600px) {
           .service-row { grid-template-columns: 1fr; gap: 16px; padding: 32px 0; }
-          .service-row-num { padding-top: 0; }
+          .service-row-right { grid-column: 1; }
         }
       `}</style>
 

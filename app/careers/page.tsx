@@ -49,7 +49,7 @@ async function getRoles(): Promise<Role[]> {
     .from('roles')
     .select('*')
     .eq('is_active', true)
-    .order('created_at', { ascending: false })
+    .order('sort_order', { ascending: true })
   if (error || !data) return []
   return data
 }
