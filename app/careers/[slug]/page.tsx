@@ -17,7 +17,7 @@ async function getRole(slug: string): Promise<Role | null> {
     .from('roles')
     .select('*')
     .eq('slug', slug)
-    .eq('is_published', true)
+    .eq('is_active', true)
     .single()
   if (error || !data) return null
   return data

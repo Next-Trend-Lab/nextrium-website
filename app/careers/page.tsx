@@ -48,7 +48,6 @@ async function getRoles(): Promise<Role[]> {
   const { data, error } = await supabase
     .from('roles')
     .select('*')
-    .eq('is_published', true)
     .eq('is_active', true)
     .order('created_at', { ascending: false })
   if (error || !data) return []
