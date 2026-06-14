@@ -235,7 +235,7 @@ export default function CareersApplicationForm({
       `}</style>
 
       <button type="button" className="apply-trigger" onClick={openModal}>
-        <span>Apply for this role</span>
+        <span>{roleId ? 'Apply for this role' : 'Send an open application'}</span>
         <span>→</span>
       </button>
 

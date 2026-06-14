@@ -265,10 +265,10 @@ export default async function CareersPage() {
             <div>
               <SectionTag label="Open application" />
               <div className="open-app-title">
-                Do not see a role?<br /><em>Apply anyway.</em>
+                Join the<br /><em>founding team.</em>
               </div>
               <p className="open-app-desc">
-                We keep a file of strong candidates. If your background fits something we are building toward, we will reach out. Tell us who you are and what you do best.
+                Whether or not you see your specific role listed, if you believe in what we are building, we want to hear from you. We keep a record of every strong candidate and reach out when the right moment arrives.
               </p>
             </div>
             <CareersApplicationForm />
