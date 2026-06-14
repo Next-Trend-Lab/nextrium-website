@@ -150,7 +150,7 @@ export default async function RolePage({ params }: Props) {
                 Fill in the form and attach your CV. We read every application and respond to everyone within two weeks.
               </p>
             </div>
-            <CareersApplicationForm roleId={role.slug} />
+            <CareersApplicationForm roleId={role.slug} roleTeam={role.team} />
           </div>
         </div>
       </section>
