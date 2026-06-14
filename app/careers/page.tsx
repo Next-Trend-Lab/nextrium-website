@@ -88,7 +88,7 @@ export default async function CareersPage() {
         .pledge-header { display: flex; flex-direction: column; gap: 0; }
         .pledge-title { font-family: var(--font-exo2); font-weight: 800; font-size: clamp(28px, 3.5vw, 44px); color: var(--navy-deep); letter-spacing: -1px; line-height: 1.05; }
         .pledge-body { display: flex; flex-direction: column; gap: 40px; }
-        .pledge-intro { display: flex; flex-direction: column; gap: 16px; max-width: 860px; }
+        .pledge-intro { display: flex; flex-direction: column; gap: 16px; max-width: 100%; }
         .pledge-intro p { font-size: 16px; color: var(--grey-dark); line-height: 1.8; }
         .pledge-blocks { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--grey-light); }
         .pledge-block { background: var(--white); padding: 32px; display: flex; flex-direction: column; gap: 12px; position: relative; }
@@ -183,15 +183,15 @@ export default async function CareersPage() {
               <div className="pledge-blocks">
                 <div className="pledge-block">
                   <div className="pledge-block-title">What this is</div>
-                  <p className="pledge-block-text">This is an opportunity to join the founding team of a company that is building something real. The work you do here will matter. It will ship. It will be used by real people. Your name will be on it. Contributors who join at this stage are not employees. You are early team members -- people who are choosing to build with us before the money arrives, because they believe the work is worth doing.</p>
+                  <p className="pledge-block-text">This is an opportunity to join the founding team of a company that is building something real. The work you do here will matter. It will ship. It will be used by real people. Your name will be on it. Contributors who join at this stage are not employees. You are early team members: people who are choosing to build with us before the money arrives, because they believe the work is worth doing.</p>
                 </div>
                 <div className="pledge-block">
                   <div className="pledge-block-title">What we commit to you</div>
-                  <p className="pledge-block-text">We will document every contribution formally. Your role, your work, your commitment, and the terms of your recognition will be written down and signed. When NexTrium generates revenue or raises funding, early contributors will be the first people we bring into a formal compensation conversation. This is not a vague promise -- it will be in your contributor agreement. You will be credited publicly as a founding team member with a direct line to the founders.</p>
+                  <p className="pledge-block-text">We will document every contribution formally. Your role, your work, your commitment, and the terms of your recognition will be written down and signed. When NexTrium generates revenue or raises funding, early contributors will be the first people we bring into a formal compensation conversation. This is not a vague promise; it will be in your contributor agreement. You will be credited publicly as a founding team member with a direct line to the founders.</p>
                 </div>
                 <div className="pledge-block">
                   <div className="pledge-block-title">What we ask of you</div>
-                  <p className="pledge-block-text">Genuine commitment to the role you are applying for. Confidentiality -- the work we are doing is not yet fully public and we need to protect it. Honesty -- if something is not working, tell us. The same standard of work you would bring to any paid role, because the people who will eventually use what we build deserve that.</p>
+                  <p className="pledge-block-text">Genuine commitment to the role you are applying for. Confidentiality: the work we are doing is not yet fully public and we need to protect it. Honesty: if something is not working, tell us. The same standard of work you would bring to any paid role, because the people who will eventually use what we build deserve that.</p>
                 </div>
                 <div className="pledge-block">
                   <div className="pledge-block-title">What this is not</div>
