@@ -48,7 +48,7 @@ const AFFILIATIONS = [
 const TEAM = [
   {
     name: 'Abdulbasit Abdulrahman Adigun',
-    role: 'Founder and Director',
+    role: 'Founder and CEO',
     bio: 'The infrastructure for trust does not yet exist where it is needed most. We are building it.',
     detail: 'Full-stack developer, Web3 builder, and community architect. Background in Mathematics Education from the University of Lagos. Building NexTrium from Lagos with a focus on economic inclusion and informal economy infrastructure.',
     photo: 'https://rcuqsnehquhyzxujeqsl.supabase.co/storage/v1/object/public/media/Gemini_Generated_Image_n3r7pxn3r7pxn3r7.png',
@@ -61,9 +61,9 @@ const TEAM = [
   },
   {
     name: 'Aanuoluwapo Ayomide Osemene',
-    role: 'Co-Director',
+    role: 'Chief Operating Officer',
     bio: 'Great communities do not happen by accident. They are organised, nurtured, and sustained by people who show up.',
-    detail: 'Product Manager, Educationist, and digital literacy advocate. Co-founder of NexTrend Group and Co-Director at NexTrium, where she focuses on building solutions to societal problems across Nigeria and Africa through blockchain and AI. Passionate about making technology accessible and impactful at the community level.',
+    detail: 'Product Manager, Educationist, and digital literacy advocate. Co-founder of NexTrend Group and Chief Operating Officer at NexTrium, where she leads operations and builds solutions to societal problems across Nigeria and Africa through blockchain and AI. Passionate about making technology accessible and impactful at the community level.',
     photo: 'https://rcuqsnehquhyzxujeqsl.supabase.co/storage/v1/object/public/media/ayomi.png',
     email: '',
     social: {
