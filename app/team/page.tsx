@@ -144,7 +144,7 @@ export default async function TeamPage() {
           <div className="team-founders-note">
             <div className="team-founders-note-inner">
               <p className="team-founders-note-text">
-                NexTrium was founded by Abdulbasit Abdulrahman Adigun and Aanuoluwapo Ayomide Osemene. Learn more about the company and its origin on the about page.
+                NexTrium is led by Abdulbasit Abdulrahman Adigun as Founder and CEO. Learn more about the company and its origin on the about page.
               </p>
               <Link href="/about#team" className="team-founders-link">
                 <span>Meet the founders</span>
