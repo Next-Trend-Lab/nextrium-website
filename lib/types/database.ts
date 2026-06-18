@@ -392,8 +392,6 @@ export type Database = {
           is_active: boolean
           sort_order: number
           closes_at: string | null
-          sort_order: number
-          closes_at: string | null
           created_at: string
           updated_at: string
         }
