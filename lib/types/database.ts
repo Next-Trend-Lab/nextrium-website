@@ -407,7 +407,6 @@ export type Database = {
           is_active?: boolean
           sort_order?: number
           closes_at?: string | null
-          sort_order?: number
           created_at?: string
           updated_at?: string
         }
@@ -422,7 +421,6 @@ export type Database = {
           is_active?: boolean
           sort_order?: number
           closes_at?: string | null
-          sort_order?: number
           updated_at?: string
         }
       }
