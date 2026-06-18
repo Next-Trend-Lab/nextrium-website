@@ -239,6 +239,15 @@ export type Database = {
           cv_url: string | null
           role_title: string | null
           status: 'pending' | 'reviewed' | 'shortlisted' | 'rejected' | 'accepted'
+          phone: string | null
+          location: string | null
+          linkedin_url: string | null
+          portfolio_url: string | null
+          github_url: string | null
+          design_url: string | null
+          published_work_url: string | null
+          currently_building: string | null
+          project_links: { url: string; description: string }[] | null
           created_at: string
           updated_at: string
         }
@@ -251,6 +260,15 @@ export type Database = {
           cv_url?: string | null
           role_title?: string | null
           status?: 'pending' | 'reviewed' | 'shortlisted' | 'rejected' | 'accepted'
+          phone?: string | null
+          location?: string | null
+          linkedin_url?: string | null
+          portfolio_url?: string | null
+          github_url?: string | null
+          design_url?: string | null
+          published_work_url?: string | null
+          currently_building?: string | null
+          project_links?: { url: string; description: string }[] | null
           created_at?: string
           updated_at?: string
         }
@@ -262,6 +280,15 @@ export type Database = {
           cv_url?: string | null
           role_title?: string | null
           status?: 'pending' | 'reviewed' | 'shortlisted' | 'rejected' | 'accepted'
+          phone?: string | null
+          location?: string | null
+          linkedin_url?: string | null
+          portfolio_url?: string | null
+          github_url?: string | null
+          design_url?: string | null
+          published_work_url?: string | null
+          currently_building?: string | null
+          project_links?: { url: string; description: string }[] | null
           updated_at?: string
         }
       }

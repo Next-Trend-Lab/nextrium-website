@@ -47,6 +47,7 @@ export default function CareersApplicationForm({
   const [step,       setStep]       = useState(1)
   const [formState,  setFormState]  = useState<FormState>('idle')
   const [errors,     setErrors]     = useState<Record<string, string>>({})
+  const [submitError, setSubmitError] = useState<string>('')
 
   const isEngineering = roleTeam === 'Engineering'
   const isDesign      = roleTeam === 'Product and Design'
@@ -132,6 +133,7 @@ export default function CareersApplicationForm({
   async function handleSubmit() {
     if (!validateStep(4)) return
     setFormState('submitting')
+    setSubmitError('')
 
     const fd = new FormData()
     if (roleId) fd.append('role_id', roleId)
@@ -156,9 +158,14 @@ export default function CareersApplicationForm({
     try {
       const res  = await fetch('/api/applications', { method: 'POST', body: fd })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? 'Something went wrong.')
+      if (!res.ok) {
+        setSubmitError(json.error ?? 'Something went wrong. Please try again.')
+        setFormState('error')
+        return
+      }
       setFormState('success')
     } catch {
+      setSubmitError('Something went wrong. Please try again.')
       setFormState('error')
     }
   }
@@ -285,7 +292,7 @@ export default function CareersApplicationForm({
                 <div className="app-modal-body">
 
                   {formState === 'error' && (
-                    <div className="form-error-box">Something went wrong. Please try again.</div>
+                    <div className="form-error-box">{submitError || 'Something went wrong. Please try again.'}</div>
                   )}
 
                   {/* Step 1 -- About you */}

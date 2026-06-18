@@ -4,6 +4,7 @@ import ApplicationsClient from './ApplicationsClient'
 import type { Application } from '@/lib/types/database'
 
 export const metadata = { title: 'Applications' }
+export const dynamic = 'force-dynamic'
 
 async function getApplications(): Promise<Application[]> {
   const supabase = createServiceClient()

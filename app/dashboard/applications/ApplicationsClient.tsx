@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Application } from '@/lib/types/database'
+import { deleteApplication } from './actions'
 
 interface ApplicationsClientProps {
   applications: Application[]
@@ -22,6 +23,8 @@ export default function ApplicationsClient({ applications: initial }: Applicatio
   const [applications, setApplications] = useState(initial)
   const [selected,     setSelected]     = useState<Application | null>(null)
   const [updating,     setUpdating]     = useState(false)
+  const [deleting,     setDeleting]     = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   async function updateStatus(id: string, status: Application['status']) {
     setUpdating(true)
@@ -34,6 +37,21 @@ export default function ApplicationsClient({ applications: initial }: Applicatio
       if (selected?.id === id) setSelected((prev) => prev ? { ...prev, status } : null)
     }
     setUpdating(false)
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirmDelete) {
+      setConfirmDelete(true)
+      return
+    }
+    setDeleting(true)
+    const { error } = await deleteApplication(id)
+    if (!error) {
+      setApplications((prev) => prev.filter((a) => a.id !== id))
+      setSelected(null)
+      setConfirmDelete(false)
+    }
+    setDeleting(false)
   }
 
   const counts = STATUS_OPTIONS.reduce((acc, s) => {
@@ -104,7 +122,7 @@ export default function ApplicationsClient({ applications: initial }: Applicatio
                 <div
                   key={app.id}
                   className={`app-row ${selected?.id === app.id ? 'selected' : ''}`}
-                  onClick={() => setSelected(app)}
+                  onClick={() => { setSelected(app); setConfirmDelete(false) }}
                 >
                   <div className="app-row-top">
                     <span className="app-name">{app.name}</span>
@@ -131,12 +149,66 @@ export default function ApplicationsClient({ applications: initial }: Applicatio
                     <div className="detail-section-title">Applied for</div>
                     <div className="detail-text">{selected.role_title ?? 'Open application'}</div>
                   </div>
+
+                  {((selected as any).phone || (selected as any).location) && (
+                    <div>
+                      <div className="detail-section-title">Contact</div>
+                      {(selected as any).phone && <div className="detail-text">{(selected as any).phone}</div>}
+                      {(selected as any).location && <div className="detail-text" style={{ color: 'var(--grey-mid)', fontSize: '12px' }}>{(selected as any).location}</div>}
+                    </div>
+                  )}
+
+                  {((selected as any).linkedin_url || (selected as any).portfolio_url || (selected as any).github_url || (selected as any).design_url || (selected as any).published_work_url) && (
+                    <div>
+                      <div className="detail-section-title">Links</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {(selected as any).linkedin_url && (
+                          <a href={(selected as any).linkedin_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>LinkedIn ↗</a>
+                        )}
+                        {(selected as any).portfolio_url && (
+                          <a href={(selected as any).portfolio_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>Portfolio ↗</a>
+                        )}
+                        {(selected as any).github_url && (
+                          <a href={(selected as any).github_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>GitHub ↗</a>
+                        )}
+                        {(selected as any).design_url && (
+                          <a href={(selected as any).design_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>Design portfolio ↗</a>
+                        )}
+                        {(selected as any).published_work_url && (
+                          <a href={(selected as any).published_work_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>Published work ↗</a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {(selected as any).project_links && Array.isArray((selected as any).project_links) && (selected as any).project_links.length > 0 && (
+                    <div>
+                      <div className="detail-section-title">Project links</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {((selected as any).project_links as { url: string; description: string }[]).map((link, i) => (
+                          <div key={i} style={{ padding: '10px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)', display: 'block', marginBottom: '4px' }}>{link.url} ↗</a>
+                            {link.description && <div style={{ fontSize: '12px', color: 'var(--grey-mid)' }}>{link.description}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(selected as any).currently_building && (
+                    <div>
+                      <div className="detail-section-title">Currently building</div>
+                      <div className="detail-text">{(selected as any).currently_building}</div>
+                    </div>
+                  )}
+
                   {selected.cover_note && (
                     <div>
                       <div className="detail-section-title">Cover note</div>
                       <div className="detail-text">{selected.cover_note}</div>
                     </div>
                   )}
+
                   {selected.cv_url && (
                     <div>
                       <div className="detail-section-title">CV / Resume</div>
@@ -150,6 +222,7 @@ export default function ApplicationsClient({ applications: initial }: Applicatio
                       </a>
                     </div>
                   )}
+
                   <div>
                     <div className="detail-section-title">Update status</div>
                     <div className="detail-status-row">
@@ -168,8 +241,45 @@ export default function ApplicationsClient({ applications: initial }: Applicatio
                       })}
                     </div>
                   </div>
+
                   <div style={{ fontSize: '11px', color: 'var(--grey-dark)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
                     Received {new Date(selected.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </div>
+
+                  <div style={{ borderTop: '1px solid rgba(232,69,69,0.15)', paddingTop: '16px' }}>
+                    {!confirmDelete ? (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(true)}
+                        style={{ width: '100%', padding: '9px 14px', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', border: '1px solid rgba(232,69,69,0.3)', background: 'none', color: 'var(--error)', transition: 'all 0.15s ease', textAlign: 'left' }}
+                      >
+                        Delete application
+                      </button>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--error)', lineHeight: '1.5' }}>
+                          This cannot be undone. The applicant will not be notified.
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDelete(false)}
+                            disabled={deleting}
+                            style={{ flex: 1, padding: '9px 14px', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.15)', background: 'none', color: 'var(--grey-mid)', transition: 'all 0.15s ease' }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(selected.id)}
+                            disabled={deleting}
+                            style={{ flex: 1, padding: '9px 14px', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', border: '1px solid var(--error)', background: 'rgba(232,69,69,0.1)', color: 'var(--error)', transition: 'all 0.15s ease' }}
+                          >
+                            {deleting ? 'Deleting...' : 'Confirm delete'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>

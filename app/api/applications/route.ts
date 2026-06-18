@@ -6,12 +6,32 @@ export async function POST(request: Request) {
     const contentType = request.headers.get('content-type') ?? ''
     let name = '', email = '', role_id = '', role_title = '', cover_note = '', cv_url = ''
 
+    let phone = '', location = '', linkedin_url = '', portfolio_url = '', github_url = '', design_url = '', published_work_url = '', currently_building = ''
+    let project_links: { url: string; description: string }[] = []
+
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData()
-      name       = (formData.get('name')       as string) ?? ''
-      email      = (formData.get('email')      as string) ?? ''
-      role_id    = (formData.get('role_id')    as string) ?? ''
-      cover_note = (formData.get('cover_note') as string) ?? ''
+      name                = (formData.get('name')                as string) ?? ''
+      email               = (formData.get('email')               as string) ?? ''
+      role_id             = (formData.get('role_id')              as string) ?? ''
+      role_title          = (formData.get('role_title')           as string) ?? ''
+      cover_note          = (formData.get('cover_note')           as string) ?? ''
+      phone               = (formData.get('phone')                as string) ?? ''
+      location            = (formData.get('location')             as string) ?? ''
+      linkedin_url        = (formData.get('linkedin_url')         as string) ?? ''
+      portfolio_url       = (formData.get('portfolio_url')        as string) ?? ''
+      github_url          = (formData.get('github_url')           as string) ?? ''
+      design_url          = (formData.get('design_url')           as string) ?? ''
+      published_work_url  = (formData.get('published_work_url')   as string) ?? ''
+      currently_building  = (formData.get('currently_building')   as string) ?? ''
+
+      for (let i = 1; i <= 3; i++) {
+        const url  = formData.get(`project_link_${i}_url`)  as string | null
+        const desc = formData.get(`project_link_${i}_desc`) as string | null
+        if (url && url.trim()) {
+          project_links.push({ url: url.trim(), description: desc?.trim() ?? '' })
+        }
+      }
 
       const cvFile = formData.get('cv') as File | null
       if (cvFile && cvFile.size > 0) {
@@ -53,7 +73,7 @@ export async function POST(request: Request) {
 
     const supabase = createServiceClient()
 
-    if (role_id && !role_title) {
+    if (role_id) {
       const { data: role } = await supabase.from('roles').select('title').eq('slug', role_id).single()
       if (role && 'title' in role) role_title = (role as { title: string }).title
     }
@@ -73,13 +93,22 @@ export async function POST(request: Request) {
     }
 
     const { error: dbError } = await (supabase.from('applications') as any).insert({
-      name:       name.trim(),
-      email:      email.trim(),
-      role_id:    role_id    || null,
-      role_title: role_title || null,
-      cover_note: cover_note.trim() || null,
-      cv_url:     cv_url     || null,
-      status:     'pending',
+      name:                name.trim(),
+      email:               email.trim(),
+      role_id:             role_id    || null,
+      role_title:          role_title || null,
+      cover_note:          cover_note.trim() || null,
+      cv_url:              cv_url     || null,
+      phone:               phone.trim()               || null,
+      location:            location.trim()             || null,
+      linkedin_url:        linkedin_url.trim()         || null,
+      portfolio_url:       portfolio_url.trim()        || null,
+      github_url:          github_url.trim()           || null,
+      design_url:          design_url.trim()           || null,
+      published_work_url:  published_work_url.trim()   || null,
+      currently_building:  currently_building.trim()   || null,
+      project_links:       project_links.length > 0 ? project_links : null,
+      status:              'pending',
     })
 
     if (dbError) throw new Error(dbError.message)
