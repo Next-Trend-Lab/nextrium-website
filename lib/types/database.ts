@@ -391,6 +391,7 @@ export type Database = {
           requirements: string[]
           is_active: boolean
           closes_at: string | null
+          sort_order: number
           created_at: string
           updated_at: string
         }
@@ -405,6 +406,7 @@ export type Database = {
           requirements?: string[]
           is_active?: boolean
           closes_at?: string | null
+          sort_order?: number
           created_at?: string
           updated_at?: string
         }
@@ -418,6 +420,7 @@ export type Database = {
           requirements?: string[]
           is_active?: boolean
           closes_at?: string | null
+          sort_order?: number
           updated_at?: string
         }
       }
