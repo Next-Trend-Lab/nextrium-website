@@ -390,8 +390,8 @@ export type Database = {
           description: string
           requirements: string[]
           is_active: boolean
-          closes_at: string | null
           sort_order: number
+          closes_at: string | null
           created_at: string
           updated_at: string
         }
