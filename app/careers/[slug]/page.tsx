@@ -4,6 +4,7 @@ import Navbar from '@/components/public/Navbar'
 import Footer from '@/components/public/Footer'
 import SectionTag from '@/components/shared/SectionTag'
 import CareersApplicationForm from '../CareersApplicationForm'
+import ExecutiveApplicationForm from '../ExecutiveApplicationForm'
 import { createClient } from '@/lib/supabase/server'
 import type { Role } from '@/lib/types/database'
 
@@ -47,6 +48,8 @@ export default async function RolePage({ params }: Props) {
   const { slug } = await params
   const role = await getRole(slug)
   if (!role) notFound()
+
+  const isExecutive = (role.sort_order ?? 0) >= 100
 
   return (
     <>
@@ -147,11 +150,17 @@ export default async function RolePage({ params }: Props) {
               <SectionTag label="Apply" />
               <div className="apply-title">Ready to <em>apply?</em></div>
               <p className="apply-desc">
-                Fill in the form and attach your CV. We read every application and respond to everyone within two weeks.
+                {isExecutive
+                  ? 'This is a leadership conversation, not a form to fill and forget. Tell us who you are and why this is the role for you. We will reach out directly to continue the conversation.'
+                  : 'Fill in the form and attach your CV. We read every application and respond to everyone within two weeks.'}
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <CareersApplicationForm roleId={role.slug} roleTeam={role.team} />
+              {isExecutive ? (
+                <ExecutiveApplicationForm roleId={role.slug} roleSlug={role.slug} />
+              ) : (
+                <CareersApplicationForm roleId={role.slug} roleTeam={role.team} />
+              )}
             </div>
           </div>
         </div>

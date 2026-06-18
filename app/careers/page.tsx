@@ -43,12 +43,25 @@ const PLEDGE_POINTS = [
   'You understand that this is a Founding Team Contributor role and carries no co-founder status, equity, or shareholding.',
 ]
 
-async function getRoles(): Promise<Role[]> {
+async function getContributorRoles(): Promise<Role[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('roles')
     .select('*')
     .eq('is_active', true)
+    .lt('sort_order', 100)
+    .order('sort_order', { ascending: true })
+  if (error || !data) return []
+  return data
+}
+
+async function getExecutiveRoles(): Promise<Role[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('roles')
+    .select('*')
+    .eq('is_active', true)
+    .gte('sort_order', 100)
     .order('sort_order', { ascending: true })
   if (error || !data) return []
   return data
@@ -61,8 +74,9 @@ function formatCloseDate(dateStr: string): string {
 }
 
 export default async function CareersPage() {
-  const roles    = await getRoles()
-  const hasRoles = roles.length > 0
+  const contributorRoles = await getContributorRoles()
+  const executiveRoles   = await getExecutiveRoles()
+  const hasRoles         = contributorRoles.length > 0
 
   return (
     <>
@@ -122,12 +136,27 @@ export default async function CareersPage() {
         .roles-empty-title { font-family: var(--font-exo2); font-weight: 800; font-size: clamp(24px, 3vw, 36px); color: var(--white); letter-spacing: -0.5px; margin-bottom: 16px; line-height: 1.15; }
         .roles-empty-title em { font-style: normal; color: var(--orange); }
         .roles-empty-desc { font-size: 15px; color: var(--grey-mid); line-height: 1.75; max-width: 480px; margin-bottom: 32px; }
+        .exec-section { background: var(--navy-deep); padding: var(--section-py) 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .exec-section-desc { font-size: 15px; color: var(--grey-mid); line-height: 1.75; max-width: 720px; margin-top: 16px; }
+        .exec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: rgba(255,255,255,0.06); }
+        .exec-card { background: var(--navy); padding: 40px; display: flex; flex-direction: column; gap: 16px; text-decoration: none; position: relative; transition: background var(--transition-base); }
+        .exec-card::before, .exec-card::after { content: ''; position: absolute; width: 12px; height: 12px; border-color: rgba(219,103,39,0); border-style: solid; transition: border-color var(--transition-slow); }
+        .exec-card::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .exec-card::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+        .exec-card:hover { background: var(--navy-mid); }
+        .exec-card:hover::before, .exec-card:hover::after { border-color: var(--orange); }
+        .exec-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .exec-card-badge { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--orange); border: 1px solid rgba(219,103,39,0.3); padding: 4px 10px; }
+        .exec-card-type { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--grey-dark); }
+        .exec-card-title { font-family: var(--font-exo2); font-weight: 800; font-size: 26px; color: var(--white); letter-spacing: -0.5px; }
+        .exec-card-excerpt { font-size: 14px; color: var(--grey-mid); line-height: 1.7; flex: 1; }
+        .exec-card-arrow { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--orange); }
         .open-app-section { background: var(--navy); padding: var(--section-py) 0; }
         .open-app-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
         .open-app-title { font-family: var(--font-exo2); font-weight: 800; font-size: clamp(28px, 3.5vw, 44px); color: var(--white); letter-spacing: -1px; line-height: 1.05; margin-bottom: 16px; }
         .open-app-title em { font-style: normal; color: var(--orange); }
         .open-app-desc { font-size: 15px; color: var(--grey-mid); line-height: 1.75; }
-        @media (max-width: 900px) { .careers-hero-inner { grid-template-columns: 1fr; gap: 32px; } .values-grid { grid-template-columns: 1fr; } .pledge-blocks { grid-template-columns: 1fr; } .pledge-confirmation { padding: 28px; } .role-row { grid-template-columns: 1fr; gap: 12px; padding: 24px; } .open-app-grid { grid-template-columns: 1fr; gap: 48px; } }
+        @media (max-width: 900px) { .careers-hero-inner { grid-template-columns: 1fr; gap: 32px; } .values-grid { grid-template-columns: 1fr; } .pledge-blocks { grid-template-columns: 1fr; } .pledge-confirmation { padding: 28px; } .role-row { grid-template-columns: 1fr; gap: 12px; padding: 24px; } .exec-grid { grid-template-columns: 1fr; } .open-app-grid { grid-template-columns: 1fr; gap: 48px; } }
       `}</style>
 
       <Navbar />
@@ -223,7 +252,7 @@ export default async function CareersPage() {
           </div>
           {hasRoles ? (
             <div className="roles-list">
-              {roles.map((role) => (
+              {contributorRoles.map((role) => (
                 <Link key={role.slug} href={`/careers/${role.slug}`} className="role-row">
                   <div>
                     <div className="role-title">{role.title}</div>
@@ -258,6 +287,33 @@ export default async function CareersPage() {
           )}
         </div>
       </section>
+
+      {executiveRoles.length > 0 && (
+        <section className="exec-section">
+          <div className="container">
+            <div style={{ marginBottom: '48px' }}>
+              <SectionTag label="Leadership team" />
+              <h2 className="section-title">Founding executives.</h2>
+              <p className="exec-section-desc">
+                These are strategic leadership positions for people who want to shape NexTrium at the highest level, not just contribute to it. We are looking for two people: a Chief Technology Officer and a Chief Product Officer, to join the founding leadership team alongside the CEO and COO.
+              </p>
+            </div>
+            <div className="exec-grid">
+              {executiveRoles.map((role: Role) => (
+                <Link key={role.slug} href={`/careers/${role.slug}`} className="exec-card">
+                  <div className="exec-card-top">
+                    <span className="exec-card-badge">{role.team}</span>
+                    <span className="exec-card-type">{role.type === 'contract' ? 'Contract · Equity-based' : TYPE_LABELS[role.type]}</span>
+                  </div>
+                  <div className="exec-card-title">{role.title}</div>
+                  <p className="exec-card-excerpt">{role.description?.slice(0, 140)}...</p>
+                  <span className="exec-card-arrow">Learn more →</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="open-app-section" id="open-application">
         <div className="container">
