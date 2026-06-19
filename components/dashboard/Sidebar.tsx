@@ -24,6 +24,7 @@ const NAV_GROUPS = [
     items: [
       { label: 'Applications', href: '/dashboard/applications', icon: '◐' },
       { label: 'Contact',      href: '/dashboard/contact',      icon: '◑' },
+      { label: 'Send Email',   href: '/dashboard/email',        icon: '✉' },
     ],
   },
 ]

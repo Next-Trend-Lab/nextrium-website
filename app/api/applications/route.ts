@@ -80,9 +80,10 @@ export async function POST(request: Request) {
 
     const { data: existing } = await supabase
       .from('applications')
-      .select('id')
+      .select('id, status')
       .eq('email', email.trim())
       .eq('role_id', role_id || '')
+      .neq('status', 'rejected')
       .maybeSingle()
 
     if (existing) {

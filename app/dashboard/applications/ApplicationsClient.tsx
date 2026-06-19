@@ -5,8 +5,16 @@ import { createClient } from '@/lib/supabase/client'
 import type { Application } from '@/lib/types/database'
 import { deleteApplication } from './actions'
 
+interface EmailSender {
+  id: string
+  name: string
+  email: string
+  is_default: boolean
+}
+
 interface ApplicationsClientProps {
   applications: Application[]
+  senders: EmailSender[]
 }
 
 const STATUS_OPTIONS: Application['status'][] = ['pending', 'reviewed', 'shortlisted', 'rejected', 'accepted']
@@ -19,12 +27,20 @@ const STATUS_STYLES: Record<Application['status'], { bg: string; color: string }
   accepted:    { bg: 'rgba(34,193,122,0.1)',  color: 'var(--success)' },
 }
 
-export default function ApplicationsClient({ applications: initial }: ApplicationsClientProps) {
+export default function ApplicationsClient({ applications: initial, senders }: ApplicationsClientProps) {
   const [applications, setApplications] = useState(initial)
   const [selected,     setSelected]     = useState<Application | null>(null)
   const [updating,     setUpdating]     = useState(false)
-  const [deleting,     setDeleting]     = useState(false)
+  const [deleting,      setDeleting]      = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const defaultSender = senders.find((s) => s.is_default) ?? senders[0]
+
+  const [emailOpen,     setEmailOpen]     = useState(false)
+  const [emailSenderId, setEmailSenderId] = useState(defaultSender?.id ?? '')
+  const [emailSubject,  setEmailSubject]  = useState('')
+  const [emailMessage,  setEmailMessage]  = useState('')
+  const [emailSending,  setEmailSending]  = useState(false)
+  const [emailResult,   setEmailResult]   = useState<'success' | 'error' | null>(null)
 
   async function updateStatus(id: string, status: Application['status']) {
     setUpdating(true)
@@ -52,6 +68,34 @@ export default function ApplicationsClient({ applications: initial }: Applicatio
       setConfirmDelete(false)
     }
     setDeleting(false)
+  }
+
+  async function handleSendEmail() {
+    if (!selected) return
+    setEmailSending(true)
+    setEmailResult(null)
+
+    try {
+      const res  = await fetch('/api/email', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          subject:    emailSubject,
+          message:    emailMessage,
+          recipients: [{ name: selected.name, email: selected.email }],
+          sender_id:  emailSenderId,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to send.')
+      setEmailResult('success')
+      setEmailSubject('')
+      setEmailMessage('')
+    } catch {
+      setEmailResult('error')
+    } finally {
+      setEmailSending(false)
+    }
   }
 
   const counts = STATUS_OPTIONS.reduce((acc, s) => {
@@ -122,7 +166,7 @@ export default function ApplicationsClient({ applications: initial }: Applicatio
                 <div
                   key={app.id}
                   className={`app-row ${selected?.id === app.id ? 'selected' : ''}`}
-                  onClick={() => { setSelected(app); setConfirmDelete(false) }}
+                  onClick={() => { setSelected(app); setConfirmDelete(false); setEmailOpen(false); setEmailResult(null) }}
                 >
                   <div className="app-row-top">
                     <span className="app-name">{app.name}</span>
@@ -244,6 +288,92 @@ export default function ApplicationsClient({ applications: initial }: Applicatio
 
                   <div style={{ fontSize: '11px', color: 'var(--grey-dark)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
                     Received {new Date(selected.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </div>
+
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
+                    {!emailOpen ? (
+                      <button
+                        type="button"
+                        onClick={() => { setEmailOpen(true); setEmailResult(null) }}
+                        style={{ width: '100%', padding: '9px 14px', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', border: '1px solid rgba(219,103,39,0.3)', background: 'none', color: 'var(--orange)', transition: 'all 0.15s ease', textAlign: 'left' }}
+                      >
+                        Send email to applicant
+                      </button>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--grey-mid)' }}>
+                            Email to {selected.name.split(' ')[0]}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => { setEmailOpen(false); setEmailResult(null) }}
+                            style={{ background: 'none', border: 'none', color: 'var(--grey-dark)', cursor: 'pointer', fontSize: '14px' }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {emailResult === 'success' && (
+                          <div style={{ padding: '10px 14px', fontSize: '12px', background: 'rgba(34,193,122,0.08)', border: '1px solid rgba(34,193,122,0.2)', color: 'var(--success)' }}>
+                            Email sent successfully to {selected.email}
+                          </div>
+                        )}
+
+                        {emailResult === 'error' && (
+                          <div style={{ padding: '10px 14px', fontSize: '12px', background: 'rgba(232,69,69,0.08)', border: '1px solid rgba(232,69,69,0.3)', color: 'var(--error)' }}>
+                            Failed to send. Please try again.
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--grey-mid)' }}>Send as</div>
+                          <select
+                            value={emailSenderId}
+                            onChange={(e) => setEmailSenderId(e.target.value)}
+                            style={{ background: 'var(--navy-mid)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--white)', fontFamily: 'var(--font-dm)', fontSize: '13px', padding: '9px 12px', outline: 'none', width: '100%' }}
+                          >
+                            {senders.map((s) => (
+                              <option key={s.id} value={s.id}>{s.name} &lt;{s.email}&gt;</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--grey-mid)' }}>Subject</div>
+                          <input
+                            type="text"
+                            value={emailSubject}
+                            onChange={(e) => setEmailSubject(e.target.value)}
+                            placeholder="Email subject"
+                            style={{ background: 'var(--navy-mid)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--white)', fontFamily: 'var(--font-dm)', fontSize: '13px', padding: '9px 12px', outline: 'none', width: '100%' }}
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--grey-mid)' }}>Message</div>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--grey-dark)' }}>Use {'{{name}}'} for first name</div>
+                          </div>
+                          <textarea
+                            value={emailMessage}
+                            onChange={(e) => setEmailMessage(e.target.value)}
+                            placeholder={`Hi {{name}},\n\nWrite your message here...`}
+                            rows={7}
+                            style={{ background: 'var(--navy-mid)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--white)', fontFamily: 'var(--font-dm)', fontSize: '13px', padding: '9px 12px', outline: 'none', width: '100%', resize: 'vertical' }}
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleSendEmail}
+                          disabled={emailSending || !emailSubject.trim() || !emailMessage.trim()}
+                          style={{ padding: '10px 16px', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', border: '1px solid var(--orange)', background: 'var(--orange)', color: 'var(--white)', transition: 'all 0.15s ease', opacity: emailSending || !emailSubject.trim() || !emailMessage.trim() ? 0.5 : 1 }}
+                        >
+                          {emailSending ? 'Sending...' : `Send to ${selected.email}`}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ borderTop: '1px solid rgba(232,69,69,0.15)', paddingTop: '16px' }}>
