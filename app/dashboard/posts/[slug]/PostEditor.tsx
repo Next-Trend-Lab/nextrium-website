@@ -44,6 +44,7 @@ export default function PostEditor({ post }: PostEditorProps) {
   const [tags,        setTags]        = useState((post?.tags ?? []).join(', '))
   const [isPublished, setIsPublished] = useState(post?.is_published    ?? false)
   const [coverImage,  setCoverImage]  = useState(post?.cover_image_url ?? '')
+  const [brand,        setBrand]      = useState<'nextrium' | 'zivana'>(post?.brand ?? 'nextrium')
 
   const [saving,   setSaving]   = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -79,6 +80,7 @@ export default function PostEditor({ post }: PostEditorProps) {
       is_published:    publish,
       published_at:    publish ? (post?.published_at ?? now) : null,
       cover_image_url: coverImage.trim() || null,
+      brand:           brand,
       updated_at:      now,
     }
 
@@ -220,6 +222,15 @@ export default function PostEditor({ post }: PostEditorProps) {
                   {POST_TYPES.map((t) => (
                     <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
+                </select>
+              </div>
+
+              <div className="editor-field">
+                <label className="editor-label" htmlFor="brand">Brand</label>
+                <select className="editor-select" id="brand" value={brand}
+                  onChange={(e) => setBrand(e.target.value as 'nextrium' | 'zivana')}>
+                  <option value="nextrium">NexTrium</option>
+                  <option value="zivana">Zivana Protocol</option>
                 </select>
               </div>
 
