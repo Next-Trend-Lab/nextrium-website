@@ -106,13 +106,13 @@ export default async function BlogPostPage({ params }: Props) {
         .post-content ul, .post-content ol { padding-left: 24px; margin-bottom: 1.5em; }
         .post-content li { margin-bottom: 0.5em; }
         .post-content blockquote { border-left: 3px solid var(--orange); padding-left: 20px; color: var(--grey-mid); font-style: italic; margin: 2em 0; }
-        .post-content code { font-family: var(--font-mono); font-size: 13px; background: rgba(7,22,40,0.08); padding: 2px 6px; border-radius: 2px; }
-        .post-content pre { background: var(--navy-deep); color: var(--off-white); padding: 24px; overflow-x: auto; margin-bottom: 1.5em; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; }
+        .post-content pre { background: var(--navy-deep); color: var(--off-white); padding: 24px; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 1.5em; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; white-space: pre; word-break: normal; }
+        .post-content code { font-family: var(--font-mono); font-size: 13px; background: rgba(7,22,40,0.08); padding: 2px 6px; border-radius: 2px; word-break: break-all; }
         .post-content img { max-width: 100%; display: block; margin: 2em 0; }
         .post-content hr { border: none; border-top: 1px solid var(--grey-light); margin: 3em 0; }
-        .post-content table { border-collapse: collapse; width: 100%; margin: 2em 0; table-layout: fixed; }
-        .post-content th { background: var(--navy-deep); color: var(--white); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; padding: 10px 14px; text-align: left; border: 1px solid rgba(255,255,255,0.1); word-wrap: break-word; }
-        .post-content td { padding: 10px 14px; font-size: 14px; color: var(--grey-dark); border: 1px solid var(--grey-light); vertical-align: top; word-wrap: break-word; }
+        .post-content table { border-collapse: collapse; width: 100%; margin: 2em 0; table-layout: fixed; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .post-content th { background: var(--navy-deep); color: var(--white); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; padding: 10px 14px; text-align: left; border: 1px solid rgba(255,255,255,0.1); word-wrap: break-word; min-width: 120px; }
+        .post-content td { padding: 10px 14px; font-size: 14px; color: var(--grey-dark); border: 1px solid var(--grey-light); vertical-align: top; word-wrap: break-word; min-width: 120px; }
         .post-content tr:nth-child(even) td { background: rgba(7,22,40,0.03); }
 
         .post-sidebar { position: sticky; top: calc(var(--nav-height) + 32px); display: flex; flex-direction: column; gap: 16px; }
