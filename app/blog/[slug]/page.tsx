@@ -95,8 +95,8 @@ export default async function BlogPostPage({ params }: Props) {
         .post-cover { width: 100%; height: auto; display: block; }
 
         .post-body-section { background: var(--off-white); padding: var(--section-py) 0; }
-        .post-body-inner { display: grid; grid-template-columns: 1fr 220px; gap: 24px; align-items: start; }
-        .post-content { font-size: 17px; color: var(--grey-dark); line-height: 1.9; width: 100%; }
+        .post-body-inner { display: grid; grid-template-columns: 1fr 220px; gap: 24px; align-items: start; min-width: 0; }
+        .post-content { font-size: 17px; color: var(--grey-dark); line-height: 1.9; width: 100%; min-width: 0; overflow: hidden; }
         .post-content h1, .post-content h2, .post-content h3 { font-family: var(--font-exo2); font-weight: 700; color: var(--navy-deep); line-height: 1.2; margin-top: 2em; margin-bottom: 0.75em; }
         .post-content h1 { font-size: 32px; }
         .post-content h2 { font-size: 26px; }
@@ -139,7 +139,14 @@ export default async function BlogPostPage({ params }: Props) {
         .back-link { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--grey-mid); text-decoration: none; transition: color var(--transition-base); margin-bottom: 40px; }
         .back-link:hover { color: var(--orange); }
 
-        @media (max-width: 900px) { .post-body-inner { grid-template-columns: 1fr; gap: 40px; } .post-sidebar { position: static; } .related-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) {
+          .post-body-inner { grid-template-columns: 1fr; gap: 40px; min-width: 0; }
+          .post-sidebar { position: static; }
+          .related-grid { grid-template-columns: 1fr; }
+          .post-content { min-width: 0; overflow: hidden; }
+          .post-content pre { white-space: pre-wrap; word-break: break-word; }
+          .post-content code { word-break: break-word; overflow-wrap: anywhere; }
+        }
       `}</style>
 
       <Navbar />
