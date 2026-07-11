@@ -82,7 +82,7 @@ export default function ApplicationsClient({ applications: initial, senders }: A
         body:    JSON.stringify({
           subject:    emailSubject,
           message:    emailMessage,
-          recipients: [{ name: selected.name, email: selected.email }],
+          recipients: [{ name: selected.name, email: selected.email, role: selected.role_title ?? '' }],
           sender_id:  emailSenderId,
         }),
       })
@@ -353,7 +353,7 @@ export default function ApplicationsClient({ applications: initial, senders }: A
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--grey-mid)' }}>Message</div>
-                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--grey-dark)' }}>Use {'{{name}}'} for first name</div>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--grey-dark)' }}>Variables: {'{{name}}'} · {'{{role}}'} · {'{{email}}'}</div>
                           </div>
                           <textarea
                             value={emailMessage}

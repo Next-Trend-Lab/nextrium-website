@@ -41,7 +41,10 @@ export async function POST(request: Request) {
 
     for (const recipient of recipients) {
       const firstName = recipient.name?.trim().split(' ')[0] ?? 'there'
-      const personalised = message.replace(/{{name}}/g, firstName)
+      const personalised = message
+        .replace(/{{name}}/g, firstName)
+        .replace(/{{role}}/g, recipient.role ?? 'your applied role')
+        .replace(/{{email}}/g, recipient.email ?? '')
 
       const res = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',

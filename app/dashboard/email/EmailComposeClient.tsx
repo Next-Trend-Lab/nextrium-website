@@ -69,7 +69,7 @@ export default function EmailComposeClient({
     if (source === 'applicants') {
       return applicants
         .filter((a) => selectedIds.has(a.id))
-        .map((a) => ({ name: a.name, email: a.email }))
+        .map((a) => ({ name: a.name, email: a.email, role: a.role_title ?? '' }))
     }
     if (source === 'team') {
       return teamMembers
@@ -212,7 +212,7 @@ export default function EmailComposeClient({
 
           <div className="compose-label">
             <span>Message</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--grey-dark)', textTransform: 'none', letterSpacing: 'normal' }}>Use {'{{name}}'} for first name</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--grey-dark)', textTransform: 'none', letterSpacing: 'normal' }}>Variables: {'{{name}}'} · {'{{role}}'} · {'{{email}}'}</span>
           </div>
           <textarea className="compose-input compose-textarea" placeholder={`Hi {{name}},\n\nWrite your message here...`} value={message} onChange={(e) => setMessage(e.target.value)} />
 
