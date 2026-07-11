@@ -30,9 +30,10 @@ export default function EmailComposeClient({
   const defaultSender = senders.find((s) => s.is_default) ?? senders[0]
 
   const [senderId,   setSenderId]   = useState(defaultSender?.id ?? '')
-  const [source,     setSource]     = useState<RecipientSource>('applicants')
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [manualText, setManualText] = useState('')
+  const [source,       setSource]       = useState<RecipientSource>('applicants')
+  const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set())
+  const [manualText,   setManualText]   = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [subject,    setSubject]    = useState('')
   const [message,    setMessage]    = useState('')
   const [sending,    setSending]    = useState(false)
@@ -56,6 +57,11 @@ export default function EmailComposeClient({
     setSelectedIds(new Set())
   }
 
+  const filteredApplicants = useMemo(() => {
+    if (statusFilter === 'all') return applicants
+    return applicants.filter((a) => a.status === statusFilter)
+  }, [applicants, statusFilter])
+
   const manualRecipients = useMemo(() => {
     return manualText
       .split(/[\n,]/)
@@ -67,7 +73,7 @@ export default function EmailComposeClient({
   const recipients = useMemo(() => {
     if (source === 'manual') return manualRecipients
     if (source === 'applicants') {
-      return applicants
+      return filteredApplicants
         .filter((a) => selectedIds.has(a.id))
         .map((a) => ({ name: a.name, email: a.email, role: a.role_title ?? '' }))
     }
@@ -150,18 +156,31 @@ export default function EmailComposeClient({
           <div className="email-panel-title">Recipients</div>
           <div className="source-tabs">
             <button type="button" className={`source-tab ${source === 'applicants' ? 'active' : ''}`} onClick={() => { setSource('applicants'); clearSelection() }}>Applicants</button>
-            <button type="button" className={`source-tab ${source === 'team' ? 'active' : ''}`} onClick={() => { setSource('team'); clearSelection() }}>Team</button>
-            <button type="button" className={`source-tab ${source === 'manual' ? 'active' : ''}`} onClick={() => { setSource('manual'); clearSelection() }}>Manual list</button>
+            <button type="button" className={`source-tab ${source === 'team' ? 'active' : ''}`} onClick={() => { setSource('team'); clearSelection(); setStatusFilter('all') }}>Team</button>
+            <button type="button" className={`source-tab ${source === 'manual' ? 'active' : ''}`} onClick={() => { setSource('manual'); clearSelection(); setStatusFilter('all') }}>Manual list</button>
           </div>
 
           {source === 'applicants' && (
             <>
+              <select
+                className="email-select"
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value); clearSelection() }}
+                style={{ marginBottom: '10px' }}
+              >
+                <option value="all">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="reviewed">Reviewed</option>
+                <option value="shortlisted">Shortlisted</option>
+                <option value="accepted">Accepted</option>
+                <option value="rejected">Rejected</option>
+              </select>
               <div className="recipient-actions">
-                <button type="button" className="recipient-action-btn" onClick={() => selectAll(applicants.map((a) => a.id))}>Select all</button>
+                <button type="button" className="recipient-action-btn" onClick={() => selectAll(filteredApplicants.map((a) => a.id))}>Select all</button>
                 <button type="button" className="recipient-action-btn" onClick={clearSelection}>Clear</button>
               </div>
               <div className="recipient-list">
-                {applicants.map((a) => (
+                {filteredApplicants.map((a) => (
                   <label key={a.id} className="recipient-row">
                     <input type="checkbox" checked={selectedIds.has(a.id)} onChange={() => toggleSelected(a.id)} />
                     <div>
