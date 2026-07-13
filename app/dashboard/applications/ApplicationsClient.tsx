@@ -403,7 +403,10 @@ export default function ApplicationsClient({ applications: initial, senders }: A
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '4px' }}>
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-dark)' }}>Public links</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-dark)' }}>Public links</div>
+                            <div style={{ fontFamily: 'var(--font-dm)', fontSize: '11px', color: 'var(--grey-dark)', lineHeight: '1.5' }}>For Google Docs, use: <span style={{ color: 'var(--orange)', fontFamily: 'var(--font-mono)', fontSize: '10px' }}>.../export?format=pdf</span></div>
+                          </div>
                           {emailAttachUrls.map((url, i) => (
                             <div key={i} style={{ display: 'flex', gap: '6px' }}>
                               <input
@@ -421,13 +424,16 @@ export default function ApplicationsClient({ applications: initial, senders }: A
                           <button type="button" onClick={addEmailUrlField} style={{ alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(219,103,39,0.3)', color: 'var(--orange)', padding: '5px 10px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '7px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>+ Add link</button>
 
                           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-dark)', marginTop: '4px' }}>File uploads</div>
-                          <input
-                            type="file"
-                            multiple
-                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-                            onChange={handleEmailFileChange}
-                            style={{ color: 'var(--grey-mid)', fontFamily: 'var(--font-dm)', fontSize: '12px' }}
-                          />
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(219,103,39,0.3)', color: 'var(--orange)', padding: '5px 10px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '7px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                            + Attach files
+                            <input
+                              type="file"
+                              multiple
+                              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                              onChange={handleEmailFileChange}
+                              style={{ display: 'none' }}
+                            />
+                          </label>
                           {emailAttachFiles.length > 0 && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                               {emailAttachFiles.map((f, i) => (
@@ -436,6 +442,16 @@ export default function ApplicationsClient({ applications: initial, senders }: A
                                   <button type="button" onClick={() => removeEmailFile(i)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '11px', padding: '0 4px' }}>✕</button>
                                 </div>
                               ))}
+                              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--grey-mid)', padding: '4px 8px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '7px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                                + Add more files
+                                <input
+                                  type="file"
+                                  multiple
+                                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                                  onChange={handleEmailFileChange}
+                                  style={{ display: 'none' }}
+                                />
+                              </label>
                             </div>
                           )}
                         </div>

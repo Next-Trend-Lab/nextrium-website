@@ -284,7 +284,10 @@ export default function EmailComposeClient({
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-dark)' }}>Public links</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-dark)' }}>Public links</div>
+                <div style={{ fontFamily: 'var(--font-dm)', fontSize: '11px', color: 'var(--grey-dark)', lineHeight: '1.5' }}>For Google Docs, use the export URL: <span style={{ color: 'var(--orange)', fontFamily: 'var(--font-mono)', fontSize: '10px' }}>.../export?format=pdf</span></div>
+              </div>
               {attachmentUrls.map((url, i) => (
                 <div key={i} style={{ display: 'flex', gap: '8px' }}>
                   <input
@@ -304,13 +307,16 @@ export default function EmailComposeClient({
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-dark)' }}>File uploads</div>
-              <input
-                type="file"
-                multiple
-                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-                onChange={handleFileChange}
-                style={{ color: 'var(--grey-mid)', fontFamily: 'var(--font-dm)', fontSize: '13px' }}
-              />
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(219,103,39,0.3)', color: 'var(--orange)', padding: '6px 12px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                + Attach files
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  onChange={handleFileChange}
+                  style={{ display: 'none' }}
+                />
+              </label>
               {attachmentFiles.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {attachmentFiles.map((f, i) => (
@@ -319,6 +325,16 @@ export default function EmailComposeClient({
                       <button type="button" onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '12px', padding: '0 4px' }}>✕</button>
                     </div>
                   ))}
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--grey-mid)', padding: '5px 10px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                    + Add more files
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                      onChange={handleFileChange}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
                 </div>
               )}
             </div>
