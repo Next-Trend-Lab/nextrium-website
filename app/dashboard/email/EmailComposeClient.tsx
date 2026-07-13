@@ -39,7 +39,6 @@ export default function EmailComposeClient({
   const [sending,         setSending]         = useState(false)
   const [results,         setResults]         = useState<SendResult[] | null>(null)
   const [sendError,       setSendError]       = useState('')
-  const [attachmentUrls,  setAttachmentUrls]  = useState<string[]>([''])
   const [attachmentFiles, setAttachmentFiles] = useState<{ name: string; content: string }[]>([])
 
   function toggleSelected(id: string) {
@@ -88,18 +87,6 @@ export default function EmailComposeClient({
     return []
   }, [source, selectedIds, manualRecipients, applicants, teamMembers])
 
-  function addUrlField() {
-    setAttachmentUrls((prev) => [...prev, ''])
-  }
-
-  function updateUrl(index: number, value: string) {
-    setAttachmentUrls((prev) => prev.map((u, i) => i === index ? value : u))
-  }
-
-  function removeUrl(index: number) {
-    setAttachmentUrls((prev) => prev.filter((_, i) => i !== index))
-  }
-
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
     const encoded = await Promise.all(
@@ -135,7 +122,6 @@ export default function EmailComposeClient({
           message,
           recipients,
           sender_id:       senderId,
-          attachments:     attachmentUrls.filter((u) => u.trim()),
           fileAttachments: attachmentFiles,
         }),
       })
@@ -146,7 +132,6 @@ export default function EmailComposeClient({
       setMessage('')
       clearSelection()
       setManualText('')
-      setAttachmentUrls([''])
       setAttachmentFiles([])
     } catch (err) {
       setSendError(err instanceof Error ? err.message : 'Something went wrong.')
@@ -281,28 +266,6 @@ export default function EmailComposeClient({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
             <div className="compose-label">
               <span>Attachments</span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-dark)' }}>Public links</div>
-                <div style={{ fontFamily: 'var(--font-dm)', fontSize: '11px', color: 'var(--grey-dark)', lineHeight: '1.5' }}>For Google Docs, use the export URL: <span style={{ color: 'var(--orange)', fontFamily: 'var(--font-mono)', fontSize: '10px' }}>.../export?format=pdf</span></div>
-              </div>
-              {attachmentUrls.map((url, i) => (
-                <div key={i} style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="url"
-                    value={url}
-                    onChange={(e) => updateUrl(i, e.target.value)}
-                    placeholder="https://docs.google.com/..."
-                    style={{ flex: 1, background: 'var(--navy-mid)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--white)', fontFamily: 'var(--font-dm)', fontSize: '13px', padding: '8px 12px', outline: 'none' }}
-                  />
-                  {attachmentUrls.length > 1 && (
-                    <button type="button" onClick={() => removeUrl(i)} style={{ background: 'none', border: '1px solid rgba(232,69,69,0.3)', color: 'var(--error)', padding: '8px 12px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Remove</button>
-                  )}
-                </div>
-              ))}
-              <button type="button" onClick={addUrlField} style={{ alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(219,103,39,0.3)', color: 'var(--orange)', padding: '6px 12px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>+ Add link</button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
