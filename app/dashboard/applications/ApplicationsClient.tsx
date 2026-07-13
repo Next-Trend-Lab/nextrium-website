@@ -35,12 +35,14 @@ export default function ApplicationsClient({ applications: initial, senders }: A
   const [confirmDelete, setConfirmDelete] = useState(false)
   const defaultSender = senders.find((s) => s.is_default) ?? senders[0]
 
-  const [emailOpen,     setEmailOpen]     = useState(false)
-  const [emailSenderId, setEmailSenderId] = useState(defaultSender?.id ?? '')
-  const [emailSubject,  setEmailSubject]  = useState('')
-  const [emailMessage,  setEmailMessage]  = useState('')
-  const [emailSending,  setEmailSending]  = useState(false)
-  const [emailResult,   setEmailResult]   = useState<'success' | 'error' | null>(null)
+  const [emailOpen,          setEmailOpen]          = useState(false)
+  const [emailSenderId,      setEmailSenderId]      = useState(defaultSender?.id ?? '')
+  const [emailSubject,       setEmailSubject]       = useState('')
+  const [emailMessage,       setEmailMessage]       = useState('')
+  const [emailSending,       setEmailSending]       = useState(false)
+  const [emailResult,        setEmailResult]        = useState<'success' | 'error' | null>(null)
+  const [emailAttachUrls,    setEmailAttachUrls]    = useState<string[]>([''])
+  const [emailAttachFiles,   setEmailAttachFiles]   = useState<{ name: string; content: string }[]>([])
 
   async function updateStatus(id: string, status: Application['status']) {
     setUpdating(true)
@@ -70,6 +72,38 @@ export default function ApplicationsClient({ applications: initial, senders }: A
     setDeleting(false)
   }
 
+  function addEmailUrlField() {
+    setEmailAttachUrls((prev) => [...prev, ''])
+  }
+
+  function updateEmailUrl(index: number, value: string) {
+    setEmailAttachUrls((prev) => prev.map((u, i) => i === index ? value : u))
+  }
+
+  function removeEmailUrl(index: number) {
+    setEmailAttachUrls((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  async function handleEmailFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    const encoded = await Promise.all(
+      files.map((file) => new Promise<{ name: string; content: string }>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const base64 = (reader.result as string).split(',')[1]
+          resolve({ name: file.name, content: base64 })
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      }))
+    )
+    setEmailAttachFiles((prev) => [...prev, ...encoded])
+  }
+
+  function removeEmailFile(index: number) {
+    setEmailAttachFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
   async function handleSendEmail() {
     if (!selected) return
     setEmailSending(true)
@@ -80,10 +114,12 @@ export default function ApplicationsClient({ applications: initial, senders }: A
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          subject:    emailSubject,
-          message:    emailMessage,
-          recipients: [{ name: selected.name, email: selected.email, role: selected.role_title ?? '' }],
-          sender_id:  emailSenderId,
+          subject:         emailSubject,
+          message:         emailMessage,
+          recipients:      [{ name: selected.name, email: selected.email, role: selected.role_title ?? '' }],
+          sender_id:       emailSenderId,
+          attachments:     emailAttachUrls.filter((u) => u.trim()),
+          fileAttachments: emailAttachFiles,
         }),
       })
       const data = await res.json()
@@ -91,6 +127,8 @@ export default function ApplicationsClient({ applications: initial, senders }: A
       setEmailResult('success')
       setEmailSubject('')
       setEmailMessage('')
+      setEmailAttachUrls([''])
+      setEmailAttachFiles([])
     } catch {
       setEmailResult('error')
     } finally {
@@ -166,7 +204,7 @@ export default function ApplicationsClient({ applications: initial, senders }: A
                 <div
                   key={app.id}
                   className={`app-row ${selected?.id === app.id ? 'selected' : ''}`}
-                  onClick={() => { setSelected(app); setConfirmDelete(false); setEmailOpen(false); setEmailResult(null) }}
+                  onClick={() => { setSelected(app); setConfirmDelete(false); setEmailOpen(false); setEmailResult(null); setEmailAttachUrls(['']); setEmailAttachFiles([]) }}
                 >
                   <div className="app-row-top">
                     <span className="app-name">{app.name}</span>
@@ -362,6 +400,44 @@ export default function ApplicationsClient({ applications: initial, senders }: A
                             rows={7}
                             style={{ background: 'var(--navy-mid)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--white)', fontFamily: 'var(--font-dm)', fontSize: '13px', padding: '9px 12px', outline: 'none', width: '100%', resize: 'vertical' }}
                           />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '4px' }}>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-dark)' }}>Public links</div>
+                          {emailAttachUrls.map((url, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '6px' }}>
+                              <input
+                                type="url"
+                                value={url}
+                                onChange={(e) => updateEmailUrl(i, e.target.value)}
+                                placeholder="https://docs.google.com/..."
+                                style={{ flex: 1, background: 'var(--navy-mid)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--white)', fontFamily: 'var(--font-dm)', fontSize: '12px', padding: '7px 10px', outline: 'none' }}
+                              />
+                              {emailAttachUrls.length > 1 && (
+                                <button type="button" onClick={() => removeEmailUrl(i)} style={{ background: 'none', border: '1px solid rgba(232,69,69,0.3)', color: 'var(--error)', padding: '7px 10px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '7px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>✕</button>
+                              )}
+                            </div>
+                          ))}
+                          <button type="button" onClick={addEmailUrlField} style={{ alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(219,103,39,0.3)', color: 'var(--orange)', padding: '5px 10px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '7px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>+ Add link</button>
+
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-dark)', marginTop: '4px' }}>File uploads</div>
+                          <input
+                            type="file"
+                            multiple
+                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                            onChange={handleEmailFileChange}
+                            style={{ color: 'var(--grey-mid)', fontFamily: 'var(--font-dm)', fontSize: '12px' }}
+                          />
+                          {emailAttachFiles.length > 0 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                              {emailAttachFiles.map((f, i) => (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                  <span style={{ fontSize: '11px', color: 'var(--off-white)' }}>{f.name}</span>
+                                  <button type="button" onClick={() => removeEmailFile(i)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '11px', padding: '0 4px' }}>✕</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         <button

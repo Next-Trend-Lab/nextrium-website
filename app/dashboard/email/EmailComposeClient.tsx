@@ -36,9 +36,11 @@ export default function EmailComposeClient({
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [subject,    setSubject]    = useState('')
   const [message,    setMessage]    = useState('')
-  const [sending,    setSending]    = useState(false)
-  const [results,    setResults]    = useState<SendResult[] | null>(null)
-  const [sendError,  setSendError]  = useState('')
+  const [sending,         setSending]         = useState(false)
+  const [results,         setResults]         = useState<SendResult[] | null>(null)
+  const [sendError,       setSendError]       = useState('')
+  const [attachmentUrls,  setAttachmentUrls]  = useState<string[]>([''])
+  const [attachmentFiles, setAttachmentFiles] = useState<{ name: string; content: string }[]>([])
 
   function toggleSelected(id: string) {
     setSelectedIds((prev) => {
@@ -86,6 +88,38 @@ export default function EmailComposeClient({
     return []
   }, [source, selectedIds, manualRecipients, applicants, teamMembers])
 
+  function addUrlField() {
+    setAttachmentUrls((prev) => [...prev, ''])
+  }
+
+  function updateUrl(index: number, value: string) {
+    setAttachmentUrls((prev) => prev.map((u, i) => i === index ? value : u))
+  }
+
+  function removeUrl(index: number) {
+    setAttachmentUrls((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    const encoded = await Promise.all(
+      files.map((file) => new Promise<{ name: string; content: string }>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const base64 = (reader.result as string).split(',')[1]
+          resolve({ name: file.name, content: base64 })
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      }))
+    )
+    setAttachmentFiles((prev) => [...prev, ...encoded])
+  }
+
+  function removeFile(index: number) {
+    setAttachmentFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
   async function handleSend() {
     if (!subject.trim() || !message.trim() || recipients.length === 0) return
     setSending(true)
@@ -96,7 +130,14 @@ export default function EmailComposeClient({
       const res  = await fetch('/api/email', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ subject, message, recipients, sender_id: senderId }),
+        body:    JSON.stringify({
+          subject,
+          message,
+          recipients,
+          sender_id:       senderId,
+          attachments:     attachmentUrls.filter((u) => u.trim()),
+          fileAttachments: attachmentFiles,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to send.')
@@ -105,6 +146,8 @@ export default function EmailComposeClient({
       setMessage('')
       clearSelection()
       setManualText('')
+      setAttachmentUrls([''])
+      setAttachmentFiles([])
     } catch (err) {
       setSendError(err instanceof Error ? err.message : 'Something went wrong.')
     } finally {
@@ -234,6 +277,52 @@ export default function EmailComposeClient({
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--grey-dark)', textTransform: 'none', letterSpacing: 'normal' }}>Variables: {'{{name}}'} · {'{{role}}'} · {'{{email}}'}</span>
           </div>
           <textarea className="compose-input compose-textarea" placeholder={`Hi {{name}},\n\nWrite your message here...`} value={message} onChange={(e) => setMessage(e.target.value)} />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+            <div className="compose-label">
+              <span>Attachments</span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-dark)' }}>Public links</div>
+              {attachmentUrls.map((url, i) => (
+                <div key={i} style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="url"
+                    value={url}
+                    onChange={(e) => updateUrl(i, e.target.value)}
+                    placeholder="https://docs.google.com/..."
+                    style={{ flex: 1, background: 'var(--navy-mid)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--white)', fontFamily: 'var(--font-dm)', fontSize: '13px', padding: '8px 12px', outline: 'none' }}
+                  />
+                  {attachmentUrls.length > 1 && (
+                    <button type="button" onClick={() => removeUrl(i)} style={{ background: 'none', border: '1px solid rgba(232,69,69,0.3)', color: 'var(--error)', padding: '8px 12px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Remove</button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={addUrlField} style={{ alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(219,103,39,0.3)', color: 'var(--orange)', padding: '6px 12px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>+ Add link</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-dark)' }}>File uploads</div>
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                onChange={handleFileChange}
+                style={{ color: 'var(--grey-mid)', fontFamily: 'var(--font-dm)', fontSize: '13px' }}
+              />
+              {attachmentFiles.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {attachmentFiles.map((f, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--off-white)' }}>{f.name}</span>
+                      <button type="button" onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '12px', padding: '0 4px' }}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
           <div className="recipient-count">{recipients.length} recipient{recipients.length !== 1 ? 's' : ''} selected</div>
 

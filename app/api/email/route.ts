@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { subject, message, recipients, sender_id } = body
+    const { subject, message, recipients, sender_id, attachments, fileAttachments } = body
 
     if (!subject?.trim())           return NextResponse.json({ error: 'Subject is required.' }, { status: 400 })
     if (!message?.trim())           return NextResponse.json({ error: 'Message is required.' }, { status: 400 })
@@ -57,6 +57,12 @@ export async function POST(request: Request) {
           to:      [{ email: recipient.email, name: recipient.name }],
           replyTo: { email: senderEmail, name: senderName },
           subject,
+          ...(((attachments && attachments.length > 0) || (fileAttachments && fileAttachments.length > 0)) ? {
+            attachment: [
+              ...(attachments ?? []).map((url: string) => ({ url })),
+              ...(fileAttachments ?? []).map((f: { content: string; name: string }) => ({ content: f.content, name: f.name })),
+            ]
+          } : {}),
           htmlContent: `
   <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
     <div style="background: #071628; padding: 24px 32px; border-bottom: 3px solid #DB6727;">
@@ -103,6 +109,10 @@ export async function POST(request: Request) {
         status:       allSucceeded ? 'sent' : 'partial',
         sender_name:  senderName,
         sender_email: senderEmail,
+        attachments: [
+          ...(attachments ?? []).map((url: string) => ({ type: 'url', value: url })),
+          ...(fileAttachments ?? []).map((f: { name: string }) => ({ type: 'file', value: f.name })),
+        ],
       })
       if (logError) console.error('Email log insert error:', logError.message)
     }
