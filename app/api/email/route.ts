@@ -12,28 +12,36 @@ export async function POST(request: Request) {
 
     const supabase = createServiceClient()
 
-    let senderName  = 'Nextrium Global Innovations Ltd'
-    let senderEmail = process.env.BREVO_SENDER_EMAIL!
+    let senderName      = 'Nextrium Global Innovations Ltd'
+    let senderEmail     = process.env.BREVO_SENDER_EMAIL!
+    let signatureName   = 'Abdulbasit Adigun Abdulrahman'
+    let signatureTitle  = 'Founder and Chief Executive Officer, Nextrium Global Innovations Ltd'
 
     if (sender_id) {
       const { data: senderRow } = await supabase
         .from('email_senders')
-        .select('name, email')
+        .select('name, email, signature_name, signature_title')
         .eq('id', sender_id)
         .single()
-      if (senderRow && 'name' in senderRow && 'email' in senderRow) {
-        senderName  = (senderRow as { name: string; email: string }).name
-        senderEmail = (senderRow as { name: string; email: string }).email
+      if (senderRow) {
+        const row = senderRow as { name: string; email: string; signature_name: string | null; signature_title: string | null }
+        senderName     = row.name
+        senderEmail    = row.email
+        signatureName  = row.signature_name  ?? signatureName
+        signatureTitle = row.signature_title ?? signatureTitle
       }
     } else {
       const { data: defaultRow } = await supabase
         .from('email_senders')
-        .select('name, email')
+        .select('name, email, signature_name, signature_title')
         .eq('is_default', true)
         .single()
-      if (defaultRow && 'name' in defaultRow && 'email' in defaultRow) {
-        senderName  = (defaultRow as { name: string; email: string }).name
-        senderEmail = (defaultRow as { name: string; email: string }).email
+      if (defaultRow) {
+        const row = defaultRow as { name: string; email: string; signature_name: string | null; signature_title: string | null }
+        senderName     = row.name
+        senderEmail    = row.email
+        signatureName  = row.signature_name  ?? signatureName
+        signatureTitle = row.signature_title ?? signatureTitle
       }
     }
 
@@ -72,10 +80,10 @@ export async function POST(request: Request) {
     <div style="padding: 32px; background: #ffffff;">
       <div style="font-size: 15px; color: #1a1a2e; line-height: 1.8; white-space: pre-wrap; margin-bottom: 32px;">${personalised}</div>
       <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #e8edf2;">
-        <p style="margin: 0 0 4px; font-size: 13px; color: #1a1a2e; font-weight: 600;">Abdulbasit Abdulrahman</p>
-        <p style="margin: 0 0 4px; font-size: 12px; color: #4a5568;">Founder and CEO, NexTrium Global Innovations Ltd</p>
+        <p style="margin: 0 0 4px; font-size: 13px; color: #1a1a2e; font-weight: 600;">${signatureName}</p>
+        <p style="margin: 0 0 4px; font-size: 12px; color: #4a5568;">${signatureTitle}</p>
         <p style="margin: 0; font-size: 12px;">
-          <a href="mailto:abdulbasit@nextrium.org" style="color: #DB6727; text-decoration: none;">abdulbasit@nextrium.org</a>
+          <a href="mailto:${senderEmail}" style="color: #DB6727; text-decoration: none;">${senderEmail}</a>
           &nbsp;·&nbsp;
           <a href="https://nextrium.org" style="color: #DB6727; text-decoration: none;">nextrium.org</a>
         </p>
