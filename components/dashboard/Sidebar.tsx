@@ -5,33 +5,43 @@ import { usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 import NTMark from '@/components/shared/NTMark'
 import { useDashboard } from './DashboardContext'
+import type { DashboardRole } from '@/lib/dashboard/getRole'
 
-const NAV_GROUPS = [
+const ALL_NAV_GROUPS = [
   {
     label: 'Content',
+    roles: ['admin', 'content', 'community'] as DashboardRole[],
     items: [
-      { label: 'Overview',           href: '/dashboard',                    icon: '◈' },
-      { label: 'Posts',              href: '/dashboard/posts',              icon: '✦' },
-      { label: 'Products',           href: '/dashboard/products',           icon: '◈' },
-      { label: 'Events',             href: '/dashboard/events',             icon: '◉' },
-      { label: 'Roles',              href: '/dashboard/roles',              icon: '◎' },
-      { label: 'Community Projects', href: '/dashboard/community-projects', icon: '◈' },
-      { label: 'Team',               href: '/dashboard/team',               icon: '◈' },
+      { label: 'Overview',           href: '/dashboard',                    icon: '◈', roles: ['admin', 'content', 'community'] as DashboardRole[] },
+      { label: 'Posts',              href: '/dashboard/posts',              icon: '✦', roles: ['admin', 'content'] as DashboardRole[] },
+      { label: 'Products',           href: '/dashboard/products',           icon: '◈', roles: ['admin', 'content'] as DashboardRole[] },
+      { label: 'Events',             href: '/dashboard/events',             icon: '◉', roles: ['admin', 'content', 'community'] as DashboardRole[] },
+      { label: 'Roles',              href: '/dashboard/roles',              icon: '◎', roles: ['admin'] as DashboardRole[] },
+      { label: 'Community Projects', href: '/dashboard/community-projects', icon: '◈', roles: ['admin', 'content', 'community'] as DashboardRole[] },
+      { label: 'Team',               href: '/dashboard/team',               icon: '◈', roles: ['admin'] as DashboardRole[] },
     ],
   },
   {
     label: 'Inbox',
+    roles: ['admin'] as DashboardRole[],
     items: [
-      { label: 'Applications', href: '/dashboard/applications', icon: '◐' },
-      { label: 'Contact',      href: '/dashboard/contact',      icon: '◑' },
-      { label: 'Send Email',   href: '/dashboard/email',        icon: '✉' },
+      { label: 'Applications', href: '/dashboard/applications', icon: '◐', roles: ['admin'] as DashboardRole[] },
+      { label: 'Contact',      href: '/dashboard/contact',      icon: '◑', roles: ['admin'] as DashboardRole[] },
+      { label: 'Send Email',   href: '/dashboard/email',        icon: '✉', roles: ['admin'] as DashboardRole[] },
     ],
   },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ role }: { role: DashboardRole }) {
   const pathname = usePathname()
   const { sidebarOpen, closeSidebar } = useDashboard()
+
+  const navGroups = ALL_NAV_GROUPS
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => item.roles.includes(role)),
+    }))
+    .filter((group) => group.roles.includes(role) && group.items.length > 0)
 
   useEffect(() => {
     closeSidebar()
@@ -75,7 +85,7 @@ export default function Sidebar() {
         </Link>
 
         <nav className="sidebar-nav">
-          {NAV_GROUPS.map((group) => (
+          {navGroups.map((group) => (
             <div key={group.label} className="sidebar-group">
               <div className="sidebar-group-label">{group.label}</div>
               {group.items.map((item) => {

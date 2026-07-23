@@ -2,8 +2,9 @@
 
 import Sidebar from './Sidebar'
 import { DashboardProvider } from './DashboardContext'
+import type { DashboardRole } from '@/lib/dashboard/getRole'
 
-function ShellInner({ children }: { children: React.ReactNode }) {
+function ShellInner({ children, role }: { children: React.ReactNode; role: DashboardRole }) {
   return (
     <>
       <style>{`
@@ -13,17 +14,17 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         @media (max-width: 768px) { .dash-content { padding: 16px; } }
       `}</style>
       <div className="dash-shell">
-        <Sidebar />
+        <Sidebar role={role} />
         <div className="dash-main">{children}</div>
       </div>
     </>
   )
 }
 
-export default function DashboardShell({ children }: { children: React.ReactNode }) {
+export default function DashboardShell({ children, role }: { children: React.ReactNode; role: DashboardRole }) {
   return (
     <DashboardProvider>
-      <ShellInner>{children}</ShellInner>
+      <ShellInner role={role}>{children}</ShellInner>
     </DashboardProvider>
   )
 }

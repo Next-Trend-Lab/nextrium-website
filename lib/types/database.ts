@@ -473,6 +473,27 @@ export type Database = {
           updated_at?: string
         }
       }
+      dashboard_users: {
+        Row: {
+          id: string
+          user_id: string
+          role: 'admin' | 'content' | 'community'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          role?: 'admin' | 'content' | 'community'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          role?: 'admin' | 'content' | 'community'
+          updated_at?: string
+        }
+      }
     }
     Views: { [_ in never]: never }
     Functions: { [_ in never]: never }
@@ -492,6 +513,7 @@ export type ContactSubmission = Database['public']['Tables']['contact_submission
 export type HubProject        = Database['public']['Tables']['hub_projects']['Row']
 export type Role              = Database['public']['Tables']['roles']['Row']
 export type SiteSetting       = Database['public']['Tables']['site_settings']['Row']
+export type DashboardUser     = Database['public']['Tables']['dashboard_users']['Row']
 
 export interface CommunityProject {
   id:          string
