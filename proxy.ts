@@ -48,7 +48,9 @@ async function getUserRole(userId: string): Promise<string> {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (pathname === '/login') return NextResponse.next()
+  if (pathname === '/login')        return NextResponse.next()
+  if (pathname === '/set-password') return NextResponse.next()
+  if (pathname.startsWith('/auth/')) return NextResponse.next()
   if (!pathname.startsWith('/dashboard')) return NextResponse.next()
 
   const { response, user } = await updateSession(request)

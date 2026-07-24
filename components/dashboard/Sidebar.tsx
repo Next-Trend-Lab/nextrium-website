@@ -30,6 +30,13 @@ const ALL_NAV_GROUPS = [
       { label: 'Send Email',   href: '/dashboard/email',        icon: '✉', roles: ['admin'] as DashboardRole[] },
     ],
   },
+  {
+    label: 'Settings',
+    roles: ['admin'] as DashboardRole[],
+    items: [
+      { label: 'Team Access', href: '/dashboard/settings/team', icon: '◈', roles: ['admin'] as DashboardRole[] },
+    ],
+  },
 ]
 
 export default function Sidebar({ role }: { role: DashboardRole }) {

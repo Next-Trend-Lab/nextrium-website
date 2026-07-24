@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import NTMark from '@/components/shared/NTMark'
 
-export default function LoginClient() {
+export default function LoginClient({ message, error: initialError }: { message?: string; error?: string }) {
   const router = useRouter()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError]       = useState<string | null>(null)
+  const [error, setError]       = useState<string | null>(initialError ?? null)
   const [loading, setLoading]   = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -107,6 +107,11 @@ export default function LoginClient() {
           </div>
           <div className="login-body">
             <form className="login-form" onSubmit={handleSubmit} noValidate>
+              {message === 'password_set' && (
+                <div style={{ fontSize: '12px', color: 'var(--success)', background: 'rgba(34,193,122,0.08)', border: '1px solid rgba(34,193,122,0.2)', padding: '10px 14px' }}>
+                  Password set successfully. Sign in to continue.
+                </div>
+              )}
               {error && <div className="login-error">{error}</div>}
               <div className="login-group">
                 <label className="login-label" htmlFor="email">Email address</label>

@@ -35,7 +35,13 @@ export function createServiceClient() {
     {
       auth: {
         autoRefreshToken: false,
-        persistSession:   false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+      global: {
+        headers: {
+          apikey: process.env.SUPABASE_SECRET_KEY!,
+        },
       },
     }
   )

@@ -113,6 +113,7 @@ export default async function DashboardPage() {
           gap: 12px; padding: 14px 24px;
           border-bottom: 1px solid rgba(255,255,255,0.04);
           text-decoration: none; transition: background 0.15s ease;
+          overflow: hidden;
         }
         .dash-row:last-child { border-bottom: none; }
         .dash-row:hover { background: rgba(255,255,255,0.03); }
@@ -121,7 +122,10 @@ export default async function DashboardPage() {
           flex: 1; min-width: 0;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .dash-row-meta { font-size: 11px; color: var(--grey-mid); flex-shrink: 0; }
+        .dash-row-meta {
+          font-size: 11px; color: var(--grey-mid); flex-shrink: 0;
+          max-width: 40%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
         .dash-badge {
           font-family: var(--font-mono); font-size: 7.5px;
           letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 7px; flex-shrink: 0;
