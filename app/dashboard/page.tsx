@@ -1,28 +1,38 @@
 import { redirect } from 'next/navigation'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { getDashboardRole, type DashboardRole } from '@/lib/dashboard/getRole'
 import Header from '@/components/dashboard/Header'
 import Link from 'next/link'
 import type { Post, Application } from '@/lib/types/database'
 
-async function getStats() {
+async function getStats(role: DashboardRole) {
   const supabase = createServiceClient()
+
+  const canSeeProducts     = role === 'admin' || role === 'content'
+  const canSeePosts        = role === 'admin' || role === 'content'
+  const canSeeEvents       = true
+  const canSeeApplications = role === 'admin'
+  const canSeeContacts     = role === 'admin'
+
   const [products, posts, events, applications, contacts] = await Promise.all([
-    supabase.from('products').select('id', { count: 'exact', head: true }),
-    supabase.from('posts').select('id', { count: 'exact', head: true }).eq('is_published', true),
-    supabase.from('events').select('id', { count: 'exact', head: true }),
-    supabase.from('applications').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-    supabase.from('contact_submissions').select('id', { count: 'exact', head: true }).eq('status', 'new'),
+    canSeeProducts     ? supabase.from('products').select('id', { count: 'exact', head: true }) : null,
+    canSeePosts        ? supabase.from('posts').select('id', { count: 'exact', head: true }).eq('is_published', true) : null,
+    canSeeEvents       ? supabase.from('events').select('id', { count: 'exact', head: true }) : null,
+    canSeeApplications ? supabase.from('applications').select('id', { count: 'exact', head: true }).eq('status', 'pending') : null,
+    canSeeContacts     ? supabase.from('contact_submissions').select('id', { count: 'exact', head: true }).eq('status', 'new') : null,
   ])
   return {
-    products:     products.count     ?? 0,
-    posts:        posts.count        ?? 0,
-    events:       events.count       ?? 0,
-    applications: applications.count ?? 0,
-    contacts:     contacts.count     ?? 0,
+    products:     products?.count     ?? 0,
+    posts:        posts?.count        ?? 0,
+    events:       events?.count       ?? 0,
+    applications: applications?.count ?? 0,
+    contacts:     contacts?.count     ?? 0,
   }
 }
 
-async function getRecentPosts(): Promise<Pick<Post, 'slug' | 'title' | 'post_type' | 'published_at' | 'is_published'>[]> {
+async function getRecentPosts(role: DashboardRole): Promise<Pick<Post, 'slug' | 'title' | 'post_type' | 'published_at' | 'is_published'>[]> {
+  if (role !== 'admin' && role !== 'content') return []
+
   const supabase = createServiceClient()
   const { data } = await supabase
     .from('posts')
@@ -32,7 +42,9 @@ async function getRecentPosts(): Promise<Pick<Post, 'slug' | 'title' | 'post_typ
   return data ?? []
 }
 
-async function getRecentApplications(): Promise<Pick<Application, 'id' | 'name' | 'email' | 'role_title' | 'status' | 'created_at'>[]> {
+async function getRecentApplications(role: DashboardRole): Promise<Pick<Application, 'id' | 'name' | 'email' | 'role_title' | 'status' | 'created_at'>[]> {
+  if (role !== 'admin') return []
+
   const supabase = createServiceClient()
   const { data } = await supabase
     .from('applications')
@@ -47,26 +59,34 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/dashboard/login')
 
+  const role = await getDashboardRole()
+
   const [stats, recentPosts, recentApplications] = await Promise.all([
-    getStats(),
-    getRecentPosts(),
-    getRecentApplications(),
+    getStats(role),
+    getRecentPosts(role),
+    getRecentApplications(role),
   ])
 
+  const canSeeProducts     = role === 'admin' || role === 'content'
+  const canSeePosts        = role === 'admin' || role === 'content'
+  const canSeeApplications = role === 'admin'
+  const canSeeContacts     = role === 'admin'
+  const canSeeRoles        = role === 'admin'
+
   const STAT_CARDS = [
-    { label: 'Products',        value: stats.products,     href: '/dashboard/products',     accent: '#0A8B8B' },
-    { label: 'Published posts', value: stats.posts,        href: '/dashboard/posts',        accent: '#4A6FA5' },
-    { label: 'Events',          value: stats.events,       href: '/dashboard/events',       accent: '#D4A843' },
-    { label: 'Pending apps',    value: stats.applications, href: '/dashboard/applications', accent: stats.applications > 0 ? '#DB6727' : '#2E3F54' },
-    { label: 'New messages',    value: stats.contacts,     href: '/dashboard/contact',      accent: stats.contacts > 0 ? '#DB6727' : '#2E3F54' },
-  ]
+    canSeeProducts     && { label: 'Products',        value: stats.products,     href: '/dashboard/products',     accent: '#0A8B8B' },
+    canSeePosts        && { label: 'Published posts', value: stats.posts,        href: '/dashboard/posts',        accent: '#4A6FA5' },
+    { label: 'Events', value: stats.events, href: '/dashboard/events', accent: '#D4A843' },
+    canSeeApplications && { label: 'Pending apps',    value: stats.applications, href: '/dashboard/applications', accent: stats.applications > 0 ? '#DB6727' : '#2E3F54' },
+    canSeeContacts     && { label: 'New messages',    value: stats.contacts,     href: '/dashboard/contact',      accent: stats.contacts > 0 ? '#DB6727' : '#2E3F54' },
+  ].filter(Boolean) as { label: string; value: number; href: string; accent: string }[]
 
   const QUICK_ACTIONS = [
-    { label: 'New post',    href: '/dashboard/posts/new'    },
-    { label: 'New product', href: '/dashboard/products/new' },
-    { label: 'New event',   href: '/dashboard/events/new'   },
-    { label: 'New role',    href: '/dashboard/roles/new'    },
-  ]
+    canSeePosts    && { label: 'New post',    href: '/dashboard/posts/new'    },
+    canSeeProducts && { label: 'New product', href: '/dashboard/products/new' },
+    { label: 'New event', href: '/dashboard/events/new' },
+    canSeeRoles    && { label: 'New role',    href: '/dashboard/roles/new'    },
+  ].filter(Boolean) as { label: string; href: string }[]
 
   return (
     <>
@@ -173,6 +193,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="dash-two-col">
+          {canSeePosts && (
           <div className="dash-panel">
             <div className="dash-panel-header">
               <span className="dash-panel-title">Recent posts</span>
@@ -200,7 +221,9 @@ export default async function DashboardPage() {
               )}
             </div>
           </div>
+          )}
 
+          {canSeeApplications && (
           <div className="dash-panel">
             <div className="dash-panel-header">
               <span className="dash-panel-title">Recent applications</span>
@@ -224,6 +247,7 @@ export default async function DashboardPage() {
               )}
             </div>
           </div>
+          )}
         </div>
       </div>
     </>
