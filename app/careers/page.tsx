@@ -54,6 +54,7 @@ async function getContributorRoles(): Promise<Role[]> {
     .select('*')
     .eq('is_active', true)
     .lt('sort_order', 100)
+    .or(`closes_at.is.null,closes_at.gt.${new Date().toISOString()}`)
     .order('sort_order', { ascending: true })
   if (error || !data) return []
   return data
