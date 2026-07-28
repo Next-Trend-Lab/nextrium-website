@@ -7,10 +7,14 @@ import CareersApplicationForm from './CareersApplicationForm'
 import { createClient } from '@/lib/supabase/server'
 import type { Role } from '@/lib/types/database'
 
+
+
 export const metadata = {
   title: 'Careers',
   description: 'Open roles at NexTrium. We are building products, infrastructure, and ventures for emerging markets. Join us.',
 }
+
+export const dynamic = 'force-dynamic'
 
 const TYPE_LABELS: Record<Role['type'], string> = {
   full_time:  'Full-time',
