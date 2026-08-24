@@ -56,10 +56,24 @@ export async function screenCandidateAction(
       .limit(1)
       .maybeSingle()
 
+    const consensus = data.consensus || data
+    const fallbackRecord: AgentScreeningResult = {
+      id: (screeningRecord as any)?.id || crypto.randomUUID(),
+      application_id: applicationId,
+      input_hash: (screeningRecord as any)?.input_hash || data.inputHash || '',
+      composite_score: (screeningRecord as any)?.composite_score ?? consensus.compositeMatchScore ?? 0,
+      consensus_tier: (screeningRecord as any)?.consensus_tier ?? consensus.consensusTier ?? 'Tier 3',
+      recommendation: (screeningRecord as any)?.recommendation ?? consensus.finalRecommendation ?? 'Manual Review',
+      full_result: (screeningRecord as any)?.full_result ?? { consensus },
+      screened_at: (screeningRecord as any)?.screened_at ?? new Date().toISOString(),
+      email_sent: (screeningRecord as any)?.email_sent ?? false,
+      webhook_sent: (screeningRecord as any)?.webhook_sent ?? false,
+    }
+
     revalidatePath('/dashboard/applications')
     return {
-      result: data.consensus || data,
-      screeningRecord: (screeningRecord as unknown as AgentScreeningResult) || undefined,
+      result: consensus,
+      screeningRecord: (screeningRecord as unknown as AgentScreeningResult) || fallbackRecord,
     }
   } catch (err) {
     console.error('[screenCandidateAction] Error:', err)
