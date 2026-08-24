@@ -494,6 +494,43 @@ export type Database = {
           updated_at?: string
         }
       }
+      agent_screening_results: {
+        Row: {
+          id: string
+          application_id: string
+          input_hash: string
+          composite_score: number
+          consensus_tier: string
+          recommendation: string
+          full_result: Json
+          screened_at: string
+          email_sent: boolean
+          webhook_sent: boolean
+          created_at?: string
+        }
+        Insert: {
+          id?: string
+          application_id: string
+          input_hash: string
+          composite_score: number
+          consensus_tier: string
+          recommendation: string
+          full_result: Json
+          screened_at?: string
+          email_sent?: boolean
+          webhook_sent?: boolean
+          created_at?: string
+        }
+        Update: {
+          composite_score?: number
+          consensus_tier?: string
+          recommendation?: string
+          full_result?: Json
+          screened_at?: string
+          email_sent?: boolean
+          webhook_sent?: boolean
+        }
+      }
     }
     Views: { [_ in never]: never }
     Functions: { [_ in never]: never }
@@ -502,18 +539,19 @@ export type Database = {
 }
 
 // Convenience row types — import these directly in pages and components
-export type Profile           = Database['public']['Tables']['profiles']['Row']
-export type Product           = Database['public']['Tables']['products']['Row']
-export type Service           = Database['public']['Tables']['services']['Row']
-export type NTEvent           = Database['public']['Tables']['events']['Row']
-export type Post              = Database['public']['Tables']['posts']['Row']
-export type Application       = Database['public']['Tables']['applications']['Row']
-export type TeamMember        = Database['public']['Tables']['team_members']['Row']
-export type ContactSubmission = Database['public']['Tables']['contact_submissions']['Row']
-export type HubProject        = Database['public']['Tables']['hub_projects']['Row']
-export type Role              = Database['public']['Tables']['roles']['Row']
-export type SiteSetting       = Database['public']['Tables']['site_settings']['Row']
-export type DashboardUser     = Database['public']['Tables']['dashboard_users']['Row']
+export type Profile              = Database['public']['Tables']['profiles']['Row']
+export type Product              = Database['public']['Tables']['products']['Row']
+export type Service              = Database['public']['Tables']['services']['Row']
+export type NTEvent              = Database['public']['Tables']['events']['Row']
+export type Post                 = Database['public']['Tables']['posts']['Row']
+export type Application          = Database['public']['Tables']['applications']['Row']
+export type TeamMember           = Database['public']['Tables']['team_members']['Row']
+export type ContactSubmission    = Database['public']['Tables']['contact_submissions']['Row']
+export type HubProject           = Database['public']['Tables']['hub_projects']['Row']
+export type Role                 = Database['public']['Tables']['roles']['Row']
+export type SiteSetting          = Database['public']['Tables']['site_settings']['Row']
+export type DashboardUser        = Database['public']['Tables']['dashboard_users']['Row']
+export type AgentScreeningResult = Database['public']['Tables']['agent_screening_results']['Row']
 
 export interface CommunityProject {
   id:          string

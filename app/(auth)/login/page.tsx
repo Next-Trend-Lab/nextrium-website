@@ -4,9 +4,14 @@ import LoginClient from './LoginClient'
 
 export const metadata = { title: 'Dashboard Login' }
 
-export default async function LoginPage() {
+interface Props {
+  searchParams: Promise<{ message?: string; error?: string }>
+}
+
+export default async function LoginPage({ searchParams }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (user) redirect('/dashboard')
-  return <LoginClient />
+  const { message, error } = await searchParams
+  return <LoginClient message={message} error={error} />
 }
