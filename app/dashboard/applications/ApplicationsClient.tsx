@@ -604,6 +604,10 @@ export default function ApplicationsClient({
         .ai-btn-toggle:hover:not(:disabled) { color: var(--white); border-color: rgba(255,255,255,0.3); }
         .ai-btn-toggle.active { border-color: var(--orange); background: rgba(219,103,39,0.12); color: var(--orange); }
         .ai-status-ok { font-family: var(--font-mono); font-size: 8px; color: var(--success); letter-spacing: 0.1em; white-space: nowrap; }
+        .ai-progress-wrap { padding: 0 16px 12px; background: rgba(219,103,39,0.04); border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .ai-progress-track { width: 100%; height: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
+        .ai-progress-fill { height: 100%; background: var(--orange); transition: width 0.4s ease; }
+        .ai-progress-label { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.08em; color: var(--grey-mid); margin-top: 6px; }
 
         .app-row { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; transition: background 0.15s ease; }
         .app-row:last-child { border-bottom: none; }
@@ -771,6 +775,21 @@ export default function ApplicationsClient({
                 </button>
               </div>
             </div>
+
+            {batchScreening && batchProgress && (
+              <div className="ai-progress-wrap">
+                <div className="ai-progress-track">
+                  <div
+                    className="ai-progress-fill"
+                    style={{ width: `${batchProgress.total > 0 ? (batchProgress.current / batchProgress.total) * 100 : 0}%` }}
+                  />
+                </div>
+                <div className="ai-progress-label">
+                  <span>{batchProgress.current} of {batchProgress.total} screened</span>
+                  <span>{batchProgress.total > 0 ? Math.round((batchProgress.current / batchProgress.total) * 100) : 0}%</span>
+                </div>
+              </div>
+            )}
 
             {selectMode && (
               <div className="ai-banner-bar">
