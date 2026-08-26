@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { logActivityAction } from '@/app/actions/activityLog'
 import { useDashboard } from './DashboardContext'
 
 interface HeaderProps {
@@ -16,7 +17,11 @@ export default function Header({ title, description, action }: HeaderProps) {
 
   async function handleSignOut() {
     const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
     await supabase.auth.signOut()
+    // Capture the actor before sign-out clears the session, since the
+    // server action logging this can no longer read it from cookies after.
+    logActivityAction({ action: 'sign_out', actorId: user?.id, actorEmail: user?.email }).catch(() => {})
     router.push('/login')
     router.refresh()
   }

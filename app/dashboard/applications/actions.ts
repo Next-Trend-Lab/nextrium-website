@@ -3,16 +3,29 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { fetchAgentsEngine } from '@/lib/agentsEngine'
+import { logActivity } from '@/lib/activityLog'
 import type { AgentScreeningResult } from '@/lib/types/database'
 
 export async function deleteApplication(id: string): Promise<{ error?: string }> {
   try {
     const supabase = createServiceClient()
+    const { data: existing } = await (supabase.from('applications') as any)
+      .select('name, email')
+      .eq('id', id)
+      .maybeSingle()
+
     const { error } = await (supabase.from('applications') as any)
       .delete()
       .eq('id', id)
     if (error) throw new Error(error.message)
+
     revalidatePath('/dashboard/applications')
+    logActivity({
+      action: 'application_deleted',
+      targetType: 'application',
+      targetId: id,
+      details: { name: existing?.name, email: existing?.email },
+    }).catch(() => {})
     return {}
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to delete application.' }
@@ -65,6 +78,16 @@ export async function screenCandidateAction(
   }
 
   revalidatePath('/dashboard/applications')
+  logActivity({
+    action: forceRescan ? 'application_rescanned' : 'application_screened',
+    targetType: 'application',
+    targetId: applicationId,
+    details: {
+      compositeScore: consensus.compositeMatchScore,
+      recommendation: consensus.finalRecommendation,
+      statusUpdated: data.statusUpdated,
+    },
+  }).catch(() => {})
   return {
     result: consensus,
     screeningRecord: (screeningRecord as unknown as AgentScreeningResult) || fallbackRecord,
@@ -97,6 +120,17 @@ export async function dispatchEmailsAction(applicationIds: string[] = []): Promi
   }
 
   revalidatePath('/dashboard/applications')
+  logActivity({
+    action: 'feedback_emails_dispatched',
+    targetType: 'application',
+    targetId: applicationIds.length === 1 ? applicationIds[0] : undefined,
+    details: {
+      applicationIds,
+      sentCount: res.data.sentCount,
+      skippedCount: res.data.skippedCount,
+      failedCount: res.data.failedCount,
+    },
+  }).catch(() => {})
   return {
     sentCount: res.data.sentCount,
     skippedCount: res.data.skippedCount,
@@ -146,6 +180,13 @@ export async function startBulkScreenAction(
   if (!res.ok) {
     return { error: res.error }
   }
+
+  logActivity({
+    action: 'bulk_screen_started',
+    targetType: 'bulk_screen_job',
+    targetId: res.data.jobId,
+    details: { applicationCount: applicationIds.length, total: res.data.total },
+  }).catch(() => {})
 
   return { jobId: res.data.jobId, total: res.data.total }
 }

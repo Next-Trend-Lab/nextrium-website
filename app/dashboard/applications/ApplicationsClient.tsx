@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Application, AgentScreeningResult } from '@/lib/types/database'
 import { useDashboardSearch } from '@/lib/dashboard/useDashboardSearch'
 import DashboardSearchBox from '@/components/dashboard/DashboardSearchBox'
+import { logActivityAction } from '@/app/actions/activityLog'
 import {
   deleteApplication,
   screenCandidateAction,
@@ -148,6 +149,12 @@ export default function ApplicationsClient({
     if (!error) {
       setApplications((prev) => prev.map((a) => a.id === id ? { ...a, status } : a))
       if (selected?.id === id) setSelected((prev) => prev ? { ...prev, status } : null)
+      logActivityAction({
+        action: 'application_status_updated',
+        targetType: 'application',
+        targetId: id,
+        details: { newStatus: status },
+      }).catch(() => {})
     }
     setUpdating(false)
   }
