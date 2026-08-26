@@ -5,6 +5,7 @@ import type { Application, AgentScreeningResult, ScreeningReport } from '@/lib/t
 
 export const metadata = { title: 'Applications' }
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 interface EmailSender {
   id: string

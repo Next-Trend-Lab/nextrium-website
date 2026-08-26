@@ -5,8 +5,6 @@ import { revalidatePath } from 'next/cache'
 import { fetchAgentsEngine } from '@/lib/agentsEngine'
 import type { AgentScreeningResult } from '@/lib/types/database'
 
-export const maxDuration = 60
-
 export async function deleteApplication(id: string): Promise<{ error?: string }> {
   try {
     const supabase = createServiceClient()

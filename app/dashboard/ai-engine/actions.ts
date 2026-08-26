@@ -2,8 +2,6 @@
 
 import { fetchAgentsEngine } from '@/lib/agentsEngine'
 
-export const maxDuration = 60
-
 export interface FailedScreeningEntry {
   applicationId: string
   candidateName: string

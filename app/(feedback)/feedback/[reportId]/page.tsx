@@ -3,6 +3,7 @@ import { notFound }     from 'next/navigation'
 import ReportClient     from './ReportClient'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 export async function generateMetadata() {
   return {

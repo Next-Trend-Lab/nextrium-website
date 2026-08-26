@@ -2,8 +2,6 @@
 
 import { fetchAgentsEngine } from '@/lib/agentsEngine'
 
-export const maxDuration = 60
-
 export async function submitReportRating(
   reportId: string,
   ratingStars: number,
