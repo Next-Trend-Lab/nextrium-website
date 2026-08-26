@@ -26,6 +26,15 @@ export async function fetchAgentsEngine<T = any>(
   const apiKey = process.env.AGENTS_ENGINE_API_KEY
   const { timeoutMs = 55000, headers, ...rest } = options
 
+  if (!engineUrl.startsWith('http://') && !engineUrl.startsWith('https://')) {
+    return {
+      ok: false,
+      status: 0,
+      data: null,
+      error: `AGENTS_ENGINE_URL is not configured correctly (got "${engineUrl}"). A relative or empty URL resolves back to this website's own domain instead of the AI Engine — set AGENTS_ENGINE_URL to the engine's full https:// address in this environment's variables.`,
+    }
+  }
+
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
