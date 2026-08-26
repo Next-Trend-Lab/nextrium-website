@@ -121,6 +121,7 @@ export interface BulkScreenOutcome {
 export interface BulkScreenJob {
   id: string
   status: 'running' | 'completed' | 'failed'
+  application_ids: string[]
   total: number
   succeeded: number
   failed: number

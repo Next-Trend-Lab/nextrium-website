@@ -101,6 +101,7 @@ export default function ApplicationsClient({
   const [batchProgress,    setBatchProgress]    = useState<{ current: number; total: number } | null>(null)
   const [batchJobId,       setBatchJobId]       = useState<string | null>(null)
   const [batchError,       setBatchError]       = useState<string | null>(null)
+  const [batchTargetIds,   setBatchTargetIds]   = useState<string[]>([])
   const [selectMode,       setSelectMode]       = useState(false)
   const [selectedIds,      setSelectedIds]      = useState<Set<string>>(new Set())
   const [trackDropdownOpen,  setTrackDropdownOpen]  = useState(false)
@@ -112,7 +113,7 @@ export default function ApplicationsClient({
   const [screeningStep,    setScreeningStep]    = useState(0)
 
   useEffect(() => {
-    if (screeningId === null) {
+    if (screeningId === null && !batchScreening) {
       setScreeningStep(0)
       return
     }
@@ -120,7 +121,7 @@ export default function ApplicationsClient({
       setScreeningStep((prev) => (prev + 1) % SCREENING_STEPS.length)
     }, 2600)
     return () => clearInterval(interval)
-  }, [screeningId])
+  }, [screeningId, batchScreening])
 
   const [bulkEmailSending, setBulkEmailSending] = useState(false)
   const [bulkEmailResult,  setBulkEmailResult]  = useState<{ sentCount: number; skippedCount: number; failedCount: number } | null>(null)
@@ -236,6 +237,9 @@ export default function ApplicationsClient({
       }
 
       setBatchProgress({ current: job.succeeded + job.failed, total: job.total })
+      if (Array.isArray(job.application_ids) && job.application_ids.length > 0) {
+        setBatchTargetIds(job.application_ids)
+      }
 
       const newlySucceeded = job.results.filter(
         (r) => r.success && !mergedApplicationIds.has(r.applicationId)
@@ -265,6 +269,7 @@ export default function ApplicationsClient({
     setBatchScreening(false)
     setBatchProgress(null)
     setBatchJobId(null)
+    setBatchTargetIds([])
   }
 
   async function runBulkScreenJob(applicationIds: string[]) {
@@ -273,6 +278,7 @@ export default function ApplicationsClient({
     setBatchScreening(true)
     setBatchError(null)
     setBatchProgress({ current: 0, total: applicationIds.length })
+    setBatchTargetIds(applicationIds)
 
     const { jobId, error } = await startBulkScreenAction(applicationIds)
 
@@ -454,6 +460,13 @@ export default function ApplicationsClient({
   const selectedReportId  = selectedConsensus?.publicFeedbackReport?.reportId ?? rebuttalStatuses[selected?.id ?? '']?.reportId ?? null
   const selectedReportUrl = selectedReportId ? `https://www.nextrium.org/feedback/${selectedReportId}` : null
   const selectedRebuttal  = selected ? rebuttalStatuses[selected.id] : null
+
+  const batchQueueIndex = selected ? batchTargetIds.indexOf(selected.id) : -1
+  const batchCompletedCount = batchProgress?.current ?? 0
+  const isInActiveBatch = batchScreening && batchQueueIndex !== -1
+  const isCurrentlyBatchScreening = isInActiveBatch && batchQueueIndex === batchCompletedCount && !selectedScreening
+  const isQueuedInBatch = isInActiveBatch && batchQueueIndex > batchCompletedCount
+  const batchQueuePosition = isQueuedInBatch ? batchQueueIndex - batchCompletedCount : 0
 
   function handleCopyReportUrl() {
     if (!selectedReportUrl) return
@@ -934,29 +947,53 @@ export default function ApplicationsClient({
                         <span className="dash-badge" style={{ background: ss.bg, color: ss.color, border: `1px solid ${ss.color}33` }}>
                           {app.status}
                         </span>
-                        {screening ? (
-                          <span
-                            className="ai-score-badge"
-                            style={{
-                              background: scoreConfig?.bg,
-                              color: scoreConfig?.color,
-                              border: `1px solid ${scoreConfig?.border}`,
-                            }}
-                          >
-                            ⚡ {screening.composite_score}%
-                          </span>
-                        ) : (
-                          <span
-                            className="ai-score-badge"
-                            style={{
-                              background: 'rgba(74,111,165,0.1)',
-                              color: 'var(--slate)',
-                              border: '1px solid rgba(74,111,165,0.3)',
-                            }}
-                          >
-                            Unscreened
-                          </span>
-                        )}
+                        {(() => {
+                          const rowQueueIndex = batchTargetIds.indexOf(app.id)
+                          const rowInBatch = batchScreening && rowQueueIndex !== -1
+                          const rowCurrentlyScreening = rowInBatch && rowQueueIndex === batchCompletedCount && !screening
+                          const rowQueued = rowInBatch && rowQueueIndex > batchCompletedCount
+
+                          if (rowCurrentlyScreening) {
+                            return (
+                              <span className="ai-score-badge" style={{ background: 'rgba(219,103,39,0.1)', color: 'var(--orange)', border: '1px solid rgba(219,103,39,0.3)' }}>
+                                ⚡ Screening...
+                              </span>
+                            )
+                          }
+                          if (rowQueued) {
+                            return (
+                              <span className="ai-score-badge" style={{ background: 'rgba(255,255,255,0.03)', color: 'var(--grey-mid)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                ⏳ Queued
+                              </span>
+                            )
+                          }
+                          if (screening) {
+                            return (
+                              <span
+                                className="ai-score-badge"
+                                style={{
+                                  background: scoreConfig?.bg,
+                                  color: scoreConfig?.color,
+                                  border: `1px solid ${scoreConfig?.border}`,
+                                }}
+                              >
+                                ⚡ {screening.composite_score}%
+                              </span>
+                            )
+                          }
+                          return (
+                            <span
+                              className="ai-score-badge"
+                              style={{
+                                background: 'rgba(74,111,165,0.1)',
+                                color: 'var(--slate)',
+                                border: '1px solid rgba(74,111,165,0.3)',
+                              }}
+                            >
+                              Unscreened
+                            </span>
+                          )
+                        })()}
                       </div>
                     </div>
                     <div className="app-role">{app.role_title ?? 'Open application'}</div>
@@ -1061,7 +1098,7 @@ export default function ApplicationsClient({
                         <button
                           type="button"
                           onClick={() => handleScreenCandidate(selected.id, true)}
-                          disabled={screeningId === selected.id}
+                          disabled={screeningId === selected.id || batchScreening}
                           className="rescan-btn"
                         >
                           {screeningId === selected.id ? 'Rescanning...' : '🔄 Rescan'}
@@ -1075,7 +1112,16 @@ export default function ApplicationsClient({
                       </div>
                     )}
 
-                    {screeningId === selected.id ? (
+                    {isQueuedInBatch ? (
+                      <div style={{ padding: '24px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ fontSize: '13px', color: 'var(--orange)', fontWeight: 600 }}>
+                          ⏳ Queued for screening
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--grey-mid)' }}>
+                          Position {batchQueuePosition} of {batchTargetIds.length - batchCompletedCount} remaining in this batch
+                        </div>
+                      </div>
+                    ) : screeningId === selected.id || isCurrentlyBatchScreening ? (
                       <div style={{ padding: '24px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <div style={{ fontSize: '13px', color: '#22c17a', fontWeight: 600 }}>
                           Evaluating candidate...
@@ -1445,6 +1491,7 @@ export default function ApplicationsClient({
                         <button
                           type="button"
                           onClick={() => handleScreenCandidate(selected.id, false)}
+                          disabled={batchScreening}
                           className="ai-btn ai-btn-primary"
                         >
                           ⚡ Run AI Consensus Screening
