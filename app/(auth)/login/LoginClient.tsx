@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { logActivityAction } from '@/app/actions/activityLog'
 import NTMark from '@/components/shared/NTMark'
 
 export default function LoginClient({ message, error: initialError }: { message?: string; error?: string }) {
@@ -22,6 +23,7 @@ export default function LoginClient({ message, error: initialError }: { message?
       setError(authError.message || 'Invalid email or password.')
       return
     }
+    logActivityAction({ action: 'sign_in', actorEmail: email }).catch(() => {})
     router.push('/dashboard')
     router.refresh()
   }
