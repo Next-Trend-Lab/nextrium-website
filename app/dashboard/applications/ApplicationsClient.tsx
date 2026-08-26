@@ -125,6 +125,8 @@ export default function ApplicationsClient({
   const [bulkEmailSending, setBulkEmailSending] = useState(false)
   const [bulkEmailResult,  setBulkEmailResult]  = useState<{ sentCount: number; skippedCount: number; failedCount: number } | null>(null)
   const [bulkEmailError,   setBulkEmailError]   = useState<string | null>(null)
+  const [perCandidateEmailSending, setPerCandidateEmailSending] = useState(false)
+  const [perCandidateEmailResult,  setPerCandidateEmailResult]  = useState<string | null>(null)
 
   const defaultSender = senders.find((s) => s.is_default) ?? senders[0]
 
@@ -354,6 +356,31 @@ export default function ApplicationsClient({
     }
   }
 
+  async function handleSendFeedbackToSelected(applicationId: string) {
+    setPerCandidateEmailSending(true)
+    setPerCandidateEmailResult(null)
+    try {
+      const res = await dispatchEmailsAction([applicationId])
+      if (res.error) {
+        setPerCandidateEmailResult(`Failed: ${res.error}`)
+        return
+      }
+      const outcome = res.results?.find((r) => r.applicationId === applicationId)
+      if (outcome?.status === 'sent') {
+        setPerCandidateEmailResult('✓ Sent successfully.')
+        setScreeningResults((prev) =>
+          prev[applicationId] ? { ...prev, [applicationId]: { ...prev[applicationId], email_sent: true } } : prev
+        )
+      } else {
+        setPerCandidateEmailResult(`Failed: ${outcome?.reason || 'Could not send email to this candidate.'}`)
+      }
+    } catch (err: any) {
+      setPerCandidateEmailResult(`Failed: ${err.message || 'Email dispatch failed'}`)
+    } finally {
+      setPerCandidateEmailSending(false)
+    }
+  }
+
   function handleLoadFeedbackToEmail(screening: AgentScreeningResult) {
     if (!selected) return
     const consensus = (screening.full_result as any)?.consensus || screening.full_result
@@ -519,6 +546,7 @@ export default function ApplicationsClient({
     setEmailResult(null)
     setEmailAttachFiles([])
     setScreeningError(null)
+    setPerCandidateEmailResult(null)
   }
 
   function toggleSelectedId(id: string) {
@@ -550,11 +578,19 @@ export default function ApplicationsClient({
         .apps-count-num { font-family: var(--font-exo2); font-weight: 800; font-size: 20px; color: var(--white); line-height: 1; }
         .apps-count-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--grey-mid); margin-top: 4px; }
         
-        .ai-banner-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: rgba(34,193,122,0.04); border-bottom: 1px solid rgba(255,255,255,0.06); }
-        .ai-banner-text { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: #22c17a; display: flex; align-items: center; gap: 6px; }
-        .ai-batch-btn { padding: 5px 10px; font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; border: 1px solid rgba(34,193,122,0.3); background: rgba(34,193,122,0.08); color: #22c17a; transition: all 0.15s ease; }
-        .ai-batch-btn:hover:not(:disabled) { background: #22c17a; color: var(--navy); }
-        .ai-batch-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .ai-banner-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; background: rgba(219,103,39,0.04); border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .ai-banner-text { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--orange); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+        .ai-btn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .ai-btn { padding: 8px 14px; font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: all 0.15s ease; white-space: nowrap; }
+        .ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .ai-btn-primary { border: 1px solid var(--orange); background: var(--orange); color: var(--white); }
+        .ai-btn-primary:hover:not(:disabled) { background: #C4521A; border-color: #C4521A; }
+        .ai-btn-secondary { border: 1px solid rgba(219,103,39,0.4); background: none; color: var(--orange); }
+        .ai-btn-secondary:hover:not(:disabled) { background: rgba(219,103,39,0.08); }
+        .ai-btn-toggle { border: 1px solid rgba(255,255,255,0.15); background: none; color: var(--grey-mid); }
+        .ai-btn-toggle:hover:not(:disabled) { color: var(--white); border-color: rgba(255,255,255,0.3); }
+        .ai-btn-toggle.active { border-color: var(--orange); background: rgba(219,103,39,0.12); color: var(--orange); }
+        .ai-status-ok { font-family: var(--font-mono); font-size: 8px; color: var(--success); letter-spacing: 0.1em; white-space: nowrap; }
 
         .app-row { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; transition: background 0.15s ease; }
         .app-row:last-child { border-bottom: none; }
@@ -682,34 +718,32 @@ export default function ApplicationsClient({
 
             <div className="ai-banner-bar">
               <div className="ai-banner-text">
-                <span>⚡ AI Talent Screening Engine</span>
+                <span>⚡ AI Screening Engine</span>
                 {batchScreening && batchProgress && (
                   <span style={{ color: 'var(--white)', fontSize: '9px' }}>
                     ({batchProgress.current}/{batchProgress.total} evaluated)
                   </span>
                 )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="ai-btn-row">
                 {unscannedCount > 0 ? (
                   <button
                     type="button"
                     onClick={handleBatchScreen}
                     disabled={batchScreening || screeningId !== null}
-                    className="ai-batch-btn"
+                    className="ai-btn ai-btn-primary"
                   >
                     {batchScreening ? 'Screening in progress...' : `⚡ Auto-Screen All (${unscannedCount})`}
                   </button>
                 ) : (
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: '#22c17a', letterSpacing: '0.1em' }}>
-                    ✓ All Screened
-                  </span>
+                  <span className="ai-status-ok">✓ All Screened</span>
                 )}
                 {pendingEmailCount > 0 && (
                   <button
                     type="button"
                     onClick={handleBulkEmail}
                     disabled={bulkEmailSending}
-                    className="ai-batch-btn"
+                    className="ai-btn ai-btn-secondary"
                   >
                     {bulkEmailSending ? 'Sending feedback emails...' : `📧 Send AI Feedback Emails (${pendingEmailCount})`}
                   </button>
@@ -718,8 +752,7 @@ export default function ApplicationsClient({
                   type="button"
                   onClick={toggleSelectMode}
                   disabled={batchScreening}
-                  className="ai-batch-btn"
-                  style={selectMode ? { background: '#22c17a', color: 'var(--navy)' } : undefined}
+                  className={`ai-btn ai-btn-toggle ${selectMode ? 'active' : ''}`}
                 >
                   {selectMode ? 'Cancel selection' : '☑ Select candidates'}
                 </button>
@@ -727,7 +760,7 @@ export default function ApplicationsClient({
             </div>
 
             {selectMode && (
-              <div className="ai-banner-bar" style={{ background: 'rgba(34,193,122,0.06)' }}>
+              <div className="ai-banner-bar">
                 <div className="ai-banner-text">
                   <span>{selectedIds.size} candidate{selectedIds.size === 1 ? '' : 's'} selected</span>
                 </div>
@@ -735,7 +768,7 @@ export default function ApplicationsClient({
                   type="button"
                   onClick={handleScreenSelected}
                   disabled={selectedIds.size === 0 || batchScreening}
-                  className="ai-batch-btn"
+                  className="ai-btn ai-btn-primary"
                 >
                   {batchScreening ? 'Screening in progress...' : `⚡ Screen Selected (${selectedIds.size})`}
                 </button>
@@ -1376,25 +1409,32 @@ export default function ApplicationsClient({
 
                         {/* Quick AI Action: Load AI Feedback into Email */}
                         {selectedConsensus.applicantFeedbackLetter && (
-                          <button
-                            type="button"
-                            onClick={() => handleLoadFeedbackToEmail(selectedScreening)}
-                            style={{
-                              padding: '9px 12px',
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: '8px',
-                              letterSpacing: '0.12em',
-                              textTransform: 'uppercase',
-                              cursor: 'pointer',
-                              border: '1px solid rgba(34,193,122,0.4)',
-                              background: 'rgba(34,193,122,0.08)',
-                              color: '#22c17a',
-                              transition: 'all 0.15s ease',
-                              textAlign: 'center',
-                            }}
-                          >
-                            📋 Load AI Feedback into Email Composer
-                          </button>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleSendFeedbackToSelected(selected.id)}
+                                disabled={perCandidateEmailSending}
+                                className="ai-btn ai-btn-primary"
+                                style={{ flex: 1 }}
+                              >
+                                {perCandidateEmailSending ? 'Sending...' : '📧 Send AI Feedback Email'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleLoadFeedbackToEmail(selectedScreening)}
+                                className="ai-btn ai-btn-secondary"
+                                style={{ flex: 1 }}
+                              >
+                                📋 Load into Composer
+                              </button>
+                            </div>
+                            {perCandidateEmailResult && (
+                              <div style={{ fontSize: '11px', color: perCandidateEmailResult.startsWith('Failed') ? 'var(--error)' : 'var(--success)' }}>
+                                {perCandidateEmailResult}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                     ) : (
@@ -1405,19 +1445,7 @@ export default function ApplicationsClient({
                         <button
                           type="button"
                           onClick={() => handleScreenCandidate(selected.id, false)}
-                          style={{
-                            padding: '10px 14px',
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '8px',
-                            letterSpacing: '0.12em',
-                            textTransform: 'uppercase',
-                            cursor: 'pointer',
-                            border: '1px solid #22c17a',
-                            background: '#22c17a',
-                            color: 'var(--navy)',
-                            fontWeight: 700,
-                            transition: 'all 0.15s ease',
-                          }}
+                          className="ai-btn ai-btn-primary"
                         >
                           ⚡ Run AI Consensus Screening
                         </button>
