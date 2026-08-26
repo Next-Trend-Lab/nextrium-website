@@ -58,7 +58,7 @@ export default function FeedbackLandingPage() {
           transition: background 0.15s ease; }
         .fb-btn:hover { background: #C4521A; }
         .fb-note { font-family: var(--font-dm); font-size: 11px;
-          color: var(--grey-dark); margin-top: 20px; line-height: 1.6;
+          color: var(--grey-mid); margin-top: 20px; line-height: 1.6;
           text-align: center; }
       `}</style>
 

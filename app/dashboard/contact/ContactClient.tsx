@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { ContactSubmission } from '@/lib/types/database'
+import { useDashboardSearch } from '@/lib/dashboard/useDashboardSearch'
+import DashboardSearchBox from '@/components/dashboard/DashboardSearchBox'
 
 interface ContactClientProps {
   submissions: ContactSubmission[]
@@ -43,6 +45,11 @@ export default function ContactClient({ submissions: initial }: ContactClientPro
 
   const newCount = submissions.filter((s) => s.status === 'new').length
 
+  const { query: searchQuery, setQuery: setSearchQuery, results: searchedSubmissions } = useDashboardSearch(
+    submissions,
+    (s) => [s.first_name, s.last_name, s.email, s.organisation, s.message]
+  )
+
   return (
     <>
       <style>{`
@@ -59,7 +66,7 @@ export default function ContactClient({ submissions: initial }: ContactClientPro
         .contact-row-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
         .contact-name { font-size: 14px; color: var(--white); font-weight: 500; }
         .contact-subject { font-size: 11px; color: var(--grey-mid); margin-bottom: 4px; }
-        .contact-preview { font-size: 12px; color: var(--grey-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .contact-preview { font-size: 12px; color: var(--grey-mid); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .dash-badge { font-family: var(--font-mono); font-size: 7.5px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; display: inline-block; white-space: nowrap; }
         .detail-panel { background: var(--navy); border: 1px solid rgba(255,255,255,0.06); position: sticky; top: 24px; }
         .detail-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.06); }
@@ -76,7 +83,7 @@ export default function ContactClient({ submissions: initial }: ContactClientPro
         .status-pill:disabled { opacity: 0.5; cursor: not-allowed; }
         .reply-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: var(--orange); color: var(--white); border: none; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; text-decoration: none; transition: background 0.15s ease; }
         .reply-btn:hover { background: var(--orange-f, #C4521A); }
-        .detail-empty { padding: 48px 24px; text-align: center; font-size: 13px; color: var(--grey-dark); }
+        .detail-empty { padding: 48px 24px; text-align: center; font-size: 13px; color: var(--grey-mid); }
         .contact-empty-state { padding: 64px 32px; text-align: center; background: var(--navy); border: 1px solid rgba(255,255,255,0.06); }
         .contact-empty-title { font-family: var(--font-exo2); font-weight: 700; font-size: 20px; color: var(--white); margin-bottom: 8px; }
         .contact-empty-desc { font-size: 14px; color: var(--grey-mid); }
@@ -95,7 +102,17 @@ export default function ContactClient({ submissions: initial }: ContactClientPro
               <span className="contact-panel-title">{submissions.length} message{submissions.length !== 1 ? 's' : ''}</span>
               {newCount > 0 && <span className="contact-new-count">{newCount} new</span>}
             </div>
-            {submissions.map((sub) => {
+            <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <DashboardSearchBox
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search messages by name, email, or organisation..."
+                resultCount={searchedSubmissions.length}
+              />
+            </div>
+            {searchedSubmissions.length === 0 ? (
+              <div className="detail-empty">No messages match your search.</div>
+            ) : searchedSubmissions.map((sub) => {
               const ss = STATUS_STYLES[sub.status]
               return (
                 <div
@@ -113,7 +130,7 @@ export default function ContactClient({ submissions: initial }: ContactClientPro
                     {SUBJECT_LABELS[sub.subject_type]}{sub.organisation ? ` · ${sub.organisation}` : ''}
                   </div>
                   <div className="contact-preview">{sub.message}</div>
-                  <div style={{ marginTop: '6px', fontSize: '10px', color: 'var(--grey-dark)', fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ marginTop: '6px', fontSize: '10px', color: 'var(--grey-mid)', fontFamily: 'var(--font-mono)' }}>
                     {new Date(sub.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </div>
                 </div>
@@ -159,7 +176,7 @@ export default function ContactClient({ submissions: initial }: ContactClientPro
                       ))}
                     </div>
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--grey-dark)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--grey-mid)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
                     Received {new Date(selected.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </div>
                 </div>

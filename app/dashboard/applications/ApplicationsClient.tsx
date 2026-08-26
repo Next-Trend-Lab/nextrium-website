@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Application, AgentScreeningResult } from '@/lib/types/database'
+import { useDashboardSearch } from '@/lib/dashboard/useDashboardSearch'
+import DashboardSearchBox from '@/components/dashboard/DashboardSearchBox'
 import {
   deleteApplication,
   screenCandidateAction,
@@ -99,6 +101,11 @@ export default function ApplicationsClient({
   const [batchProgress,    setBatchProgress]    = useState<{ current: number; total: number } | null>(null)
   const [batchJobId,       setBatchJobId]       = useState<string | null>(null)
   const [batchError,       setBatchError]       = useState<string | null>(null)
+  const [selectMode,       setSelectMode]       = useState(false)
+  const [selectedIds,      setSelectedIds]      = useState<Set<string>>(new Set())
+  const [trackDropdownOpen,  setTrackDropdownOpen]  = useState(false)
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false)
+  const listScrollRef = useRef<HTMLDivElement>(null)
   const [screeningError,   setScreeningError]   = useState<string | null>(null)
   const [copiedQuestion,   setCopiedQuestion]   = useState<number | null>(null)
   const [showQuestions,    setShowQuestions]    = useState(false)
@@ -258,15 +265,14 @@ export default function ApplicationsClient({
     setBatchJobId(null)
   }
 
-  async function handleBatchScreen() {
-    const unscanned = applications.filter((a) => !screeningResults[a.id])
-    if (unscanned.length === 0) return
+  async function runBulkScreenJob(applicationIds: string[]) {
+    if (applicationIds.length === 0) return
 
     setBatchScreening(true)
     setBatchError(null)
-    setBatchProgress({ current: 0, total: unscanned.length })
+    setBatchProgress({ current: 0, total: applicationIds.length })
 
-    const { jobId, error } = await startBulkScreenAction(unscanned.map((a) => a.id))
+    const { jobId, error } = await startBulkScreenAction(applicationIds)
 
     if (error && !jobId) {
       setBatchError(error)
@@ -283,6 +289,18 @@ export default function ApplicationsClient({
     }
 
     await pollBulkScreenJob(jobId!)
+  }
+
+  function handleBatchScreen() {
+    const unscanned = applications.filter((a) => !screeningResults[a.id])
+    return runBulkScreenJob(unscanned.map((a) => a.id))
+  }
+
+  function handleScreenSelected() {
+    const ids = Array.from(selectedIds)
+    setSelectMode(false)
+    setSelectedIds(new Set())
+    return runBulkScreenJob(ids)
   }
 
   // Resume polling an in-flight bulk screening job after a page reload,
@@ -435,7 +453,12 @@ export default function ApplicationsClient({
     return sortDir === 'asc' ? ' ▲' : ' ▼'
   }
 
-  const tableRows = applications
+  const { query: searchQuery, setQuery: setSearchQuery, results: searchedApplications } = useDashboardSearch(
+    applications,
+    (app) => [app.name, app.email, app.role_title]
+  )
+
+  const tableRows = searchedApplications
     .filter((app) => {
       const screening = screeningResults[app.id]
       if (minScoreFilter.trim()) {
@@ -470,6 +493,13 @@ export default function ApplicationsClient({
       return 0
     })
 
+  // Reset scroll position when filters/search change — otherwise newly
+  // included rows can land above or below the current scroll position,
+  // making a "Clear filters" click look like it did nothing.
+  useEffect(() => {
+    listScrollRef.current?.scrollTo({ top: 0 })
+  }, [trackFilter, recFilter, minScoreFilter, searchQuery])
+
   function toggleTrackFilter(track: string) {
     setTrackFilter((prev) => prev.includes(track) ? prev.filter((t) => t !== track) : [...prev, track])
   }
@@ -479,12 +509,32 @@ export default function ApplicationsClient({
   }
 
   function selectApp(app: Application) {
+    if (selectMode) {
+      toggleSelectedId(app.id)
+      return
+    }
     setSelected(app)
     setConfirmDelete(false)
     setEmailOpen(false)
     setEmailResult(null)
     setEmailAttachFiles([])
     setScreeningError(null)
+  }
+
+  function toggleSelectedId(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectMode() {
+    setSelectMode((prev) => {
+      if (prev) setSelectedIds(new Set())
+      return !prev
+    })
   }
 
   return (
@@ -498,7 +548,7 @@ export default function ApplicationsClient({
         .apps-count-item { flex: 1; padding: 12px 8px; text-align: center; border-right: 1px solid rgba(255,255,255,0.04); }
         .apps-count-item:last-child { border-right: none; }
         .apps-count-num { font-family: var(--font-exo2); font-weight: 800; font-size: 20px; color: var(--white); line-height: 1; }
-        .apps-count-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--grey-dark); margin-top: 4px; }
+        .apps-count-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--grey-mid); margin-top: 4px; }
         
         .ai-banner-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: rgba(34,193,122,0.04); border-bottom: 1px solid rgba(255,255,255,0.06); }
         .ai-banner-text { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: #22c17a; display: flex; align-items: center; gap: 6px; }
@@ -513,7 +563,7 @@ export default function ApplicationsClient({
         .app-row-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
         .app-name { font-size: 14px; color: var(--white); font-weight: 500; }
         .app-role { font-size: 11px; color: var(--grey-mid); margin-bottom: 4px; }
-        .app-date { font-size: 10px; color: var(--grey-dark); font-family: var(--font-mono); }
+        .app-date { font-size: 10px; color: var(--grey-mid); font-family: var(--font-mono); }
         .dash-badge { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; display: inline-block; white-space: nowrap; }
         .ai-score-badge { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; display: inline-block; white-space: nowrap; margin-left: 6px; }
 
@@ -529,7 +579,7 @@ export default function ApplicationsClient({
         .status-select-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
         .status-select-btn.active { border-color: var(--orange); color: var(--white); background: rgba(219,103,39,0.08); }
         .status-select-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .detail-empty { padding: 48px 24px; text-align: center; font-size: 13px; color: var(--grey-dark); }
+        .detail-empty { padding: 48px 24px; text-align: center; font-size: 13px; color: var(--grey-mid); }
         .apps-empty-state { padding: 64px 32px; text-align: center; background: var(--navy); border: 1px solid rgba(255,255,255,0.06); }
         .apps-empty-title { font-family: var(--font-exo2); font-weight: 700; font-size: 20px; color: var(--white); margin-bottom: 8px; }
         .apps-empty-desc { font-size: 14px; color: var(--grey-mid); }
@@ -573,7 +623,7 @@ export default function ApplicationsClient({
         .rebuttal-indicator { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 10px; display: inline-block; }
         .rebuttal-indicator.pending { background: rgba(219,103,39,0.12); color: var(--orange); border: 1px solid rgba(219,103,39,0.35); }
         .rebuttal-indicator.locked { background: rgba(255,255,255,0.03); color: var(--grey-mid); border: 1px solid rgba(255,255,255,0.1); }
-        .rebuttal-indicator.none { background: rgba(255,255,255,0.02); color: var(--grey-dark); border: 1px solid rgba(255,255,255,0.06); }
+        .rebuttal-indicator.none { background: rgba(255,255,255,0.02); color: var(--grey-mid); border: 1px solid rgba(255,255,255,0.06); }
 
         .view-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
         .view-toggle { display: flex; gap: 0; border: 1px solid rgba(255,255,255,0.1); }
@@ -588,6 +638,15 @@ export default function ApplicationsClient({
         .table-filter-chip { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 9px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: none; color: var(--grey-mid); transition: all 0.15s ease; }
         .table-filter-chip.active { border-color: var(--orange); color: var(--orange); background: rgba(219,103,39,0.08); }
 
+        .filter-dropdown-trigger { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 12px; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: var(--navy-mid); color: var(--white); transition: all 0.15s ease; }
+        .filter-dropdown-trigger:hover { border-color: rgba(255,255,255,0.25); }
+        .filter-dropdown-backdrop { position: fixed; inset: 0; z-index: 49; }
+        .filter-dropdown-menu { position: absolute; top: calc(100% + 4px); left: 0; z-index: 50; min-width: 220px; max-height: 260px; overflow-y: auto; background: var(--navy); border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 8px 24px rgba(0,0,0,0.4); padding: 6px; display: flex; flex-direction: column; }
+        .filter-dropdown-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; font-size: 12px; color: var(--off-white); cursor: pointer; transition: background 0.15s ease; }
+        .filter-dropdown-item:hover { background: rgba(255,255,255,0.04); }
+        .filter-dropdown-item input { accent-color: var(--orange); cursor: pointer; }
+        .filter-dropdown-clear { align-self: flex-end; font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--orange); background: none; border: none; cursor: pointer; padding: 4px 8px; }
+
         .apps-table-wrap { overflow-x: auto; }
         .apps-table { width: 100%; border-collapse: collapse; }
         .apps-table th { text-align: left; padding: 10px 14px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--grey-mid); border-bottom: 1px solid rgba(255,255,255,0.08); cursor: pointer; white-space: nowrap; user-select: none; }
@@ -596,7 +655,7 @@ export default function ApplicationsClient({
         .apps-table tr.table-row { cursor: pointer; transition: background 0.15s ease; }
         .apps-table tr.table-row:hover { background: rgba(255,255,255,0.03); }
         .apps-table tr.table-row.selected { background: rgba(219,103,39,0.06); }
-        .table-empty { padding: 48px 24px; text-align: center; font-size: 13px; color: var(--grey-dark); }
+        .table-empty { padding: 48px 24px; text-align: center; font-size: 13px; color: var(--grey-mid); }
 
         @media (max-width: 1200px) { .apps-layout { grid-template-columns: 1fr; } .detail-panel { position: static; max-height: none; } .apps-panel { position: static; max-height: none; } .apps-list-scroll { overflow-y: visible; } }
       `}</style>
@@ -655,8 +714,33 @@ export default function ApplicationsClient({
                     {bulkEmailSending ? 'Sending feedback emails...' : `📧 Send AI Feedback Emails (${pendingEmailCount})`}
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={toggleSelectMode}
+                  disabled={batchScreening}
+                  className="ai-batch-btn"
+                  style={selectMode ? { background: '#22c17a', color: 'var(--navy)' } : undefined}
+                >
+                  {selectMode ? 'Cancel selection' : '☑ Select candidates'}
+                </button>
               </div>
             </div>
+
+            {selectMode && (
+              <div className="ai-banner-bar" style={{ background: 'rgba(34,193,122,0.06)' }}>
+                <div className="ai-banner-text">
+                  <span>{selectedIds.size} candidate{selectedIds.size === 1 ? '' : 's'} selected</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleScreenSelected}
+                  disabled={selectedIds.size === 0 || batchScreening}
+                  className="ai-batch-btn"
+                >
+                  {batchScreening ? 'Screening in progress...' : `⚡ Screen Selected (${selectedIds.size})`}
+                </button>
+              </div>
+            )}
 
             {(bulkEmailResult || bulkEmailError) && (
               <div style={{ padding: '8px 16px', fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.05em', borderBottom: '1px solid rgba(255,255,255,0.06)', color: bulkEmailError ? 'var(--error)' : '#22c17a' }}>
@@ -671,6 +755,15 @@ export default function ApplicationsClient({
                 Bulk screening error: {batchError}
               </div>
             )}
+
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <DashboardSearchBox
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search candidates by name, email, or role..."
+                resultCount={searchedApplications.length}
+              />
+            </div>
 
             <div className="view-toggle-row">
               <div className="view-toggle">
@@ -706,39 +799,81 @@ export default function ApplicationsClient({
                   />
                 </div>
                 {availableTracks.length > 0 && (
-                  <div className="table-filter-group">
+                  <div className="table-filter-group" style={{ position: 'relative' }}>
                     <span className="table-filter-label">Track</span>
-                    {availableTracks.map((track) => (
-                      <button
-                        key={track}
-                        type="button"
-                        className={`table-filter-chip ${trackFilter.includes(track) ? 'active' : ''}`}
-                        onClick={() => toggleTrackFilter(track)}
-                      >
-                        {track}
-                      </button>
-                    ))}
+                    <button
+                      type="button"
+                      className="filter-dropdown-trigger"
+                      onClick={() => { setTrackDropdownOpen((v) => !v); setStatusDropdownOpen(false) }}
+                    >
+                      {trackFilter.length === 0 ? 'All tracks' : `${trackFilter.length} selected`}
+                      <span style={{ marginLeft: '6px' }}>{trackDropdownOpen ? '▲' : '▼'}</span>
+                    </button>
+                    {trackDropdownOpen && (
+                      <>
+                        <div className="filter-dropdown-backdrop" onClick={() => setTrackDropdownOpen(false)} />
+                        <div className="filter-dropdown-menu">
+                          {trackFilter.length > 0 && (
+                            <button type="button" className="filter-dropdown-clear" onClick={(e) => { e.stopPropagation(); setTrackFilter([]); setTrackDropdownOpen(false) }}>
+                              Clear
+                            </button>
+                          )}
+                          {availableTracks.map((track) => (
+                            <label key={track} className="filter-dropdown-item">
+                              <input
+                                type="checkbox"
+                                checked={trackFilter.includes(track)}
+                                onChange={() => toggleTrackFilter(track)}
+                              />
+                              {track}
+                            </label>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
-                <div className="table-filter-group">
+                <div className="table-filter-group" style={{ position: 'relative' }}>
                   <span className="table-filter-label">Status</span>
-                  {STATUS_OPTIONS.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className={`table-filter-chip ${recFilter.includes(s) ? 'active' : ''}`}
-                      onClick={() => toggleRecFilter(s)}
-                    >
-                      {s}
-                    </button>
-                  ))}
+                  <button
+                    type="button"
+                    className="filter-dropdown-trigger"
+                    onClick={() => { setStatusDropdownOpen((v) => !v); setTrackDropdownOpen(false) }}
+                  >
+                    {recFilter.length === 0 ? 'All statuses' : `${recFilter.length} selected`}
+                    <span style={{ marginLeft: '6px' }}>{statusDropdownOpen ? '▲' : '▼'}</span>
+                  </button>
+                  {statusDropdownOpen && (
+                    <>
+                      <div className="filter-dropdown-backdrop" onClick={() => setStatusDropdownOpen(false)} />
+                      <div className="filter-dropdown-menu">
+                        {recFilter.length > 0 && (
+                          <button type="button" className="filter-dropdown-clear" onClick={(e) => { e.stopPropagation(); setRecFilter([]); setStatusDropdownOpen(false) }}>
+                            Clear
+                          </button>
+                        )}
+                        {STATUS_OPTIONS.map((s) => (
+                          <label key={s} className="filter-dropdown-item">
+                            <input
+                              type="checkbox"
+                              checked={recFilter.includes(s)}
+                              onChange={() => toggleRecFilter(s)}
+                            />
+                            {s}
+                          </label>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
 
-            <div className="apps-list-scroll">
-            {viewMode === 'list' ? (
-              applications.map((app) => {
+            <div className="apps-list-scroll" ref={listScrollRef}>
+            {viewMode === 'list' && searchedApplications.length === 0 ? (
+              <div className="table-empty">No applications match your search.</div>
+            ) : viewMode === 'list' ? (
+              searchedApplications.map((app) => {
                 const ss = STATUS_STYLES[app.status]
                 const screening = screeningResults[app.id]
                 const scoreConfig = screening ? getScoreColor(screening.composite_score) : null
@@ -750,7 +885,18 @@ export default function ApplicationsClient({
                     onClick={() => selectApp(app)}
                   >
                     <div className="app-row-top">
-                      <span className="app-name">{app.name}</span>
+                      <span className="app-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {selectMode && (
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(app.id)}
+                            onChange={() => toggleSelectedId(app.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ accentColor: '#22c17a', cursor: 'pointer' }}
+                          />
+                        )}
+                        {app.name}
+                      </span>
                       <div style={{ display: 'flex', alignItems: 'center' }}>
                         <span className="dash-badge" style={{ background: ss.bg, color: ss.color, border: `1px solid ${ss.color}33` }}>
                           {app.status}
@@ -793,6 +939,7 @@ export default function ApplicationsClient({
                   <table className="apps-table">
                     <thead>
                       <tr>
+                        {selectMode && <th></th>}
                         <th onClick={() => handleSort('name')}>Candidate{sortIndicator('name')}</th>
                         <th onClick={() => handleSort('role')}>Role{sortIndicator('role')}</th>
                         <th onClick={() => handleSort('evaluation_track')}>Track{sortIndicator('evaluation_track')}</th>
@@ -816,6 +963,17 @@ export default function ApplicationsClient({
                             className={`table-row ${selected?.id === app.id ? 'selected' : ''}`}
                             onClick={() => selectApp(app)}
                           >
+                            {selectMode && (
+                              <td>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedIds.has(app.id)}
+                                  onChange={() => toggleSelectedId(app.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{ accentColor: '#22c17a', cursor: 'pointer' }}
+                                />
+                              </td>
+                            )}
                             <td>{app.name}</td>
                             <td>{app.role_title ?? 'Open application'}</td>
                             <td>{screening?.evaluation_track ?? '—'}</td>
@@ -1364,7 +1522,7 @@ export default function ApplicationsClient({
                     </div>
                   </div>
 
-                  <div style={{ fontSize: '11px', color: 'var(--grey-dark)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--grey-mid)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
                     Received {new Date(selected.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </div>
 
@@ -1386,7 +1544,7 @@ export default function ApplicationsClient({
                           <button
                             type="button"
                             onClick={() => { setEmailOpen(false); setEmailResult(null) }}
-                            style={{ background: 'none', border: 'none', color: 'var(--grey-dark)', cursor: 'pointer', fontSize: '14px' }}
+                            style={{ background: 'none', border: 'none', color: 'var(--grey-mid)', cursor: 'pointer', fontSize: '14px' }}
                           >
                             ✕
                           </button>
@@ -1431,7 +1589,7 @@ export default function ApplicationsClient({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--grey-mid)' }}>Message</div>
-                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--grey-dark)' }}>Variables: {'{{name}}'} · {'{{role}}'} · {'{{email}}'}</div>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--grey-mid)' }}>Variables: {'{{name}}'} · {'{{role}}'} · {'{{email}}'}</div>
                           </div>
                           <textarea
                             value={emailMessage}
@@ -1443,7 +1601,7 @@ export default function ApplicationsClient({
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '4px' }}>
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-dark)' }}>File uploads</div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-mid)' }}>File uploads</div>
                           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(219,103,39,0.3)', color: 'var(--orange)', padding: '5px 10px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                             + Attach files
                             <input

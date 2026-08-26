@@ -28,6 +28,7 @@ const ALL_NAV_GROUPS = [
       { label: 'Applications', href: '/dashboard/applications', icon: '◐', roles: ['admin'] as DashboardRole[] },
       { label: 'Contact',      href: '/dashboard/contact',      icon: '◑', roles: ['admin'] as DashboardRole[] },
       { label: 'Send Email',   href: '/dashboard/email',        icon: '✉', roles: ['admin'] as DashboardRole[] },
+      { label: 'AI Engine',    href: '/dashboard/ai-engine',    icon: '⚡', roles: ['admin'] as DashboardRole[] },
     ],
   },
   {

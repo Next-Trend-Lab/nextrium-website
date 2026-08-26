@@ -40,7 +40,7 @@
 .textarea:focus { border-color: var(--orange); }
 .textarea::placeholder { color: var(--grey-dark); }
 .char { font-family: var(--font-mono); font-size: 10px;
-  color: var(--grey-dark); text-align: right; margin-top: 4px; }
+  color: var(--grey-mid); text-align: right; margin-top: 4px; }
 .urlRow { display: flex; gap: 8px; margin-bottom: 8px; }
 .urlInput { flex: 1; background: var(--navy-mid);
   border: 1px solid rgba(255,255,255,0.08); color: var(--white);
