@@ -9,8 +9,8 @@ function ShellInner({ children, role }: { children: React.ReactNode; role: Dashb
     <>
       <style>{`
         .dash-shell { display: flex; min-height: 100vh; background: var(--navy-deep); }
-        .dash-main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow-x: hidden; }
-        .dash-content { flex: 1; padding: 32px; overflow-y: auto; }
+        .dash-main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow-x: hidden; overflow-y: visible; }
+        .dash-content { flex: 1; padding: 32px; }
         @media (max-width: 768px) { .dash-content { padding: 16px; } }
       `}</style>
       <div className="dash-shell">

@@ -1,0 +1,133 @@
+.page { max-width: 720px; margin: 0 auto;
+  padding: 48px 24px 80px; background: var(--navy-deep);
+  min-height: 100vh; }
+.brand { font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--orange); margin-bottom: 32px; }
+.reportId { font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.12em; color: #C8D4E0; margin-bottom: 10px; }
+.title { font-family: var(--font-exo2); font-weight: 700;
+  font-size: 28px; color: var(--white); margin-bottom: 6px;
+  line-height: 1.2; }
+.date { font-family: var(--font-mono); font-size: 11px;
+  color: #C8D4E0; margin-bottom: 36px; }
+.scoreBlock { background: var(--navy);
+  border: 1px solid rgba(255,255,255,0.06); padding: 28px;
+  margin-bottom: 36px; display: flex; align-items: center; gap: 28px; }
+.scoreNumber { font-family: var(--font-exo2); font-weight: 800;
+  font-size: 52px; color: var(--white); line-height: 1; flex-shrink: 0; }
+.scoreMeta { display: flex; flex-direction: column; gap: 6px; }
+.scoreLabel { font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--grey-mid); }
+.tier { font-family: var(--font-dm); font-size: 14px;
+  font-weight: 600; color: var(--white); }
+.recBadge { display: inline-block; padding: 3px 12px;
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; }
+.section { margin-bottom: 36px; }
+.sectionTitle { font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--orange);
+  margin-bottom: 14px; padding-bottom: 8px;
+  border-bottom: 1px solid rgba(219,103,39,0.2); }
+.general { font-family: var(--font-dm); font-size: 13px;
+  line-height: 1.75; color: var(--grey-mid); padding: 16px;
+  background: rgba(255,255,255,0.02);
+  border-left: 3px solid var(--orange); }
+.overall { font-family: var(--font-dm); font-size: 14px;
+  line-height: 1.8; color: #C8D4E0; }
+.dimension { padding: 16px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04); }
+.dimension:last-child { border-bottom: none; }
+.dimHeader { display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 8px; }
+.dimName { font-family: var(--font-dm); font-size: 13px;
+  font-weight: 600; color: var(--white); }
+.dimScore { font-family: var(--font-mono); font-size: 11px;
+  color: var(--grey-mid); }
+.dimBarBg { height: 3px; background: rgba(255,255,255,0.06);
+  margin-bottom: 10px; }
+.dimBarFill { height: 3px; background: var(--orange); }
+.dimFinding { font-family: var(--font-dm); font-size: 13px;
+  line-height: 1.7; color: var(--grey-mid); }
+.listItem { font-family: var(--font-dm); font-size: 13px;
+  line-height: 1.7; color: var(--grey-mid); padding: 6px 0 6px 18px;
+  position: relative; }
+.listItem::before { content: ''; position: absolute; left: 0;
+  top: 13px; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--orange); }
+.gapItem::before { background: var(--grey-dark); }
+.divider { height: 1px; background: rgba(255,255,255,0.04);
+  margin: 36px 0; }
+.rebuttalBlock { background: var(--navy);
+  border: 1px solid rgba(255,255,255,0.06); padding: 24px; }
+.rebuttalTitle { font-family: var(--font-dm); font-size: 14px;
+  font-weight: 600; color: var(--white); margin-bottom: 8px; }
+.rebuttalDesc { font-family: var(--font-dm); font-size: 13px;
+  line-height: 1.7; color: var(--grey-mid); margin-bottom: 16px; }
+.rebuttalBtn { display: inline-block; padding: 10px 22px;
+  background: none; border: 1px solid rgba(219,103,39,0.4);
+  color: var(--orange); font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  text-decoration: none; transition: all 0.15s ease; }
+.rebuttalBtn:hover { background: rgba(219,103,39,0.08);
+  border-color: var(--orange); }
+.rebuttalDone { font-family: var(--font-mono); font-size: 12px;
+  color: var(--success); letter-spacing: 0.08em; }
+
+.actionsRow { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 16px; }
+
+.rateBtn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px;
+  background: none; border: 1px solid rgba(255,255,255,0.12);
+  color: #C8D4E0; font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.15s ease; }
+.rateBtn:hover:not(:disabled) { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.25); }
+.rateBtn:disabled { opacity: 0.6; cursor: default; }
+.rateBtnStars { color: var(--orange); font-size: 12px; letter-spacing: 0.05em; }
+
+.ratedNote { font-family: var(--font-mono); font-size: 11px; color: var(--success);
+  letter-spacing: 0.05em; }
+
+.modalOverlay { position: fixed; inset: 0; background: rgba(3,10,20,0.72);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; z-index: 100; }
+.modalBox { width: 100%; max-width: 440px; background: var(--navy);
+  border: 1px solid rgba(255,255,255,0.1); padding: 28px; }
+.modalTitle { font-family: var(--font-exo2); font-weight: 700; font-size: 18px;
+  color: var(--white); margin-bottom: 6px; }
+.modalSubtitle { font-family: var(--font-dm); font-size: 12.5px;
+  color: var(--grey-mid); line-height: 1.6; margin-bottom: 20px; }
+.modalStars { display: flex; gap: 8px; margin-bottom: 20px; }
+.modalStar { background: none; border: none; cursor: pointer; font-size: 30px;
+  line-height: 1; padding: 0; color: rgba(255,255,255,0.15); transition: color 0.15s ease, transform 0.1s ease; }
+.modalStar:hover { transform: scale(1.08); }
+.modalStar.filled { color: var(--orange); }
+.modalLabel { font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 0.15em; text-transform: uppercase; color: var(--grey-mid);
+  margin-bottom: 8px; display: block; }
+.modalTextarea { width: 100%; background: var(--navy-mid);
+  border: 1px solid rgba(255,255,255,0.08); color: var(--white);
+  font-family: var(--font-dm); font-size: 13px; padding: 12px 14px;
+  outline: none; resize: vertical; min-height: 100px;
+  line-height: 1.6; margin-bottom: 20px; transition: border-color 0.15s ease; }
+.modalTextarea:focus { border-color: var(--orange); }
+.modalError { font-family: var(--font-dm); font-size: 12px; color: var(--error);
+  margin-bottom: 14px; }
+.modalActions { display: flex; gap: 10px; }
+.modalCancel { flex: 1; padding: 11px 14px; font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: none;
+  color: var(--grey-mid); transition: all 0.15s ease; }
+.modalCancel:hover:not(:disabled) { color: var(--white); border-color: rgba(255,255,255,0.25); }
+.modalSubmit { flex: 1; padding: 11px 14px; font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer; border: none; background: var(--orange); color: var(--white);
+  transition: background 0.15s ease; }
+.modalSubmit:hover:not(:disabled) { background: #C4521A; }
+.modalSubmit:disabled, .modalCancel:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 480px) {
+  .scoreBlock { flex-direction: column; align-items: flex-start; }
+  .scoreNumber { font-size: 40px; }
+}

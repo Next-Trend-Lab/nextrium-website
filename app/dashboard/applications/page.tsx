@@ -1,7 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import Header from '@/components/dashboard/Header'
 import ApplicationsClient from './ApplicationsClient'
-import type { Application, AgentScreeningResult } from '@/lib/types/database'
+import type { Application, AgentScreeningResult, ScreeningReport } from '@/lib/types/database'
 
 export const metadata = { title: 'Applications' }
 export const dynamic = 'force-dynamic'
@@ -53,11 +53,33 @@ async function getScreeningResults(): Promise<Record<string, AgentScreeningResul
   return map
 }
 
+async function getRebuttalStatuses(): Promise<Record<string, { reportId: string; rebuttalSubmitted: boolean; rebuttalLocked: boolean }>> {
+  const supabase = createServiceClient()
+  const { data, error } = await (supabase.from('screening_reports') as any)
+    .select('id, application_id, rebuttal_submitted, rebuttal_locked')
+
+  if (error) {
+    console.warn('[ApplicationsPage] Could not fetch screening reports:', error.message)
+    return {}
+  }
+
+  const map: Record<string, { reportId: string; rebuttalSubmitted: boolean; rebuttalLocked: boolean }> = {}
+  ;(data as ScreeningReport[] ?? []).forEach((row) => {
+    map[row.application_id] = {
+      reportId:          row.id,
+      rebuttalSubmitted: row.rebuttal_submitted,
+      rebuttalLocked:    row.rebuttal_locked,
+    }
+  })
+  return map
+}
+
 export default async function ApplicationsPage() {
-  const [applications, senders, screeningResults] = await Promise.all([
+  const [applications, senders, screeningResults, rebuttalStatuses] = await Promise.all([
     getApplications(),
     getSenders(),
     getScreeningResults(),
+    getRebuttalStatuses(),
   ])
   return (
     <>
@@ -67,6 +89,7 @@ export default async function ApplicationsPage() {
           applications={applications}
           senders={senders}
           initialScreeningResults={screeningResults}
+          rebuttalStatuses={rebuttalStatuses}
         />
       </div>
     </>

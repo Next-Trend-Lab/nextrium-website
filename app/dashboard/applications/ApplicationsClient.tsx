@@ -1,9 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Application, AgentScreeningResult } from '@/lib/types/database'
-import { deleteApplication, screenCandidateAction } from './actions'
+import {
+  deleteApplication,
+  screenCandidateAction,
+  dispatchEmailsAction,
+  startBulkScreenAction,
+  getBulkScreenJobStatus,
+  getScreeningResultsForApplications,
+  type BulkScreenOutcome,
+} from './actions'
+
+const BULK_SCREEN_JOB_STORAGE_KEY = 'nextrium-active-bulk-screen-job'
 
 interface EmailSender {
   id: string
@@ -12,11 +22,21 @@ interface EmailSender {
   is_default: boolean
 }
 
+interface RebuttalStatus {
+  reportId: string
+  rebuttalSubmitted: boolean
+  rebuttalLocked: boolean
+}
+
 interface ApplicationsClientProps {
   applications: Application[]
   senders: EmailSender[]
   initialScreeningResults?: Record<string, AgentScreeningResult>
+  rebuttalStatuses?: Record<string, RebuttalStatus>
 }
+
+type SortField = 'name' | 'role' | 'evaluation_track' | 'composite_score' | 'consensus_tier' | 'recommendation' | 'rebuttal' | 'screened_at'
+type SortDir   = 'asc' | 'desc'
 
 const STATUS_OPTIONS: Application['status'][] = ['pending', 'reviewed', 'shortlisted', 'rejected', 'accepted']
 
@@ -26,6 +46,22 @@ const STATUS_STYLES: Record<Application['status'], { bg: string; color: string }
   shortlisted: { bg: 'rgba(212,168,67,0.1)',  color: 'var(--gold)'    },
   rejected:    { bg: 'rgba(232,69,69,0.1)',   color: 'var(--error)'   },
   accepted:    { bg: 'rgba(34,193,122,0.1)',  color: 'var(--success)' },
+}
+
+const SCREENING_STEPS = [
+  'Parsing resume and application details…',
+  'Running Layer 1 resume scorecard (Gemini + DeepSeek ensemble)…',
+  'Cross-checking GitHub, portfolio, and LinkedIn footprint…',
+  'Running Layer 2 live artifact verification…',
+  'Reconciling dual-layer consensus score…',
+  'Drafting recruiter briefing and interview questions…',
+]
+
+function asDisplayText(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (value == null) return ''
+  if (typeof value === 'object' && 'url' in (value as any)) return String((value as any).url ?? '')
+  return String(value)
 }
 
 function getScoreColor(score: number): { color: string; bg: string; border: string } {
@@ -39,6 +75,7 @@ export default function ApplicationsClient({
   applications: initial,
   senders,
   initialScreeningResults = {},
+  rebuttalStatuses = {},
 }: ApplicationsClientProps) {
   const [applications, setApplications] = useState(initial)
   const [selected,     setSelected]     = useState<Application | null>(null)
@@ -46,14 +83,41 @@ export default function ApplicationsClient({
   const [deleting,      setDeleting]      = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
+  // Table view state
+  const [viewMode,        setViewMode]        = useState<'list' | 'table'>('list')
+  const [sortField,       setSortField]       = useState<SortField>('screened_at')
+  const [sortDir,         setSortDir]         = useState<SortDir>('desc')
+  const [minScoreFilter,  setMinScoreFilter]  = useState<string>('')
+  const [trackFilter,     setTrackFilter]     = useState<string[]>([])
+  const [recFilter,       setRecFilter]       = useState<Application['status'][]>([])
+  const [copiedReportUrl, setCopiedReportUrl] = useState(false)
+
   // AI Screening state
   const [screeningResults, setScreeningResults] = useState<Record<string, AgentScreeningResult>>(initialScreeningResults)
   const [screeningId,      setScreeningId]      = useState<string | null>(null)
   const [batchScreening,   setBatchScreening]   = useState(false)
   const [batchProgress,    setBatchProgress]    = useState<{ current: number; total: number } | null>(null)
+  const [batchJobId,       setBatchJobId]       = useState<string | null>(null)
+  const [batchError,       setBatchError]       = useState<string | null>(null)
   const [screeningError,   setScreeningError]   = useState<string | null>(null)
   const [copiedQuestion,   setCopiedQuestion]   = useState<number | null>(null)
   const [showQuestions,    setShowQuestions]    = useState(false)
+  const [screeningStep,    setScreeningStep]    = useState(0)
+
+  useEffect(() => {
+    if (screeningId === null) {
+      setScreeningStep(0)
+      return
+    }
+    const interval = setInterval(() => {
+      setScreeningStep((prev) => (prev + 1) % SCREENING_STEPS.length)
+    }, 2600)
+    return () => clearInterval(interval)
+  }, [screeningId])
+
+  const [bulkEmailSending, setBulkEmailSending] = useState(false)
+  const [bulkEmailResult,  setBulkEmailResult]  = useState<{ sentCount: number; skippedCount: number; failedCount: number } | null>(null)
+  const [bulkEmailError,   setBulkEmailError]   = useState<string | null>(null)
 
   const defaultSender = senders.find((s) => s.is_default) ?? senders[0]
 
@@ -122,12 +186,14 @@ export default function ApplicationsClient({
         setScreeningError(res.error)
       } else if (res.screeningRecord) {
         setScreeningResults((prev) => ({ ...prev, [appId]: res.screeningRecord! }))
-        const targetStatus = res.screeningRecord.composite_score >= 85 ? 'shortlisted' : 'reviewed'
-        setApplications((prev) =>
-          prev.map((a) => (a.id === appId ? { ...a, status: targetStatus as any } : a))
-        )
-        if (selected?.id === appId) {
-          setSelected((prev) => (prev ? { ...prev, status: targetStatus as any } : null))
+        if (res.statusUpdated) {
+          const targetStatus = res.statusUpdated as Application['status']
+          setApplications((prev) =>
+            prev.map((a) => (a.id === appId ? { ...a, status: targetStatus } : a))
+          )
+          if (selected?.id === appId) {
+            setSelected((prev) => (prev ? { ...prev, status: targetStatus } : null))
+          }
         }
       }
     } catch (err: any) {
@@ -137,21 +203,137 @@ export default function ApplicationsClient({
     }
   }
 
+  function applyBulkOutcomesToState(outcomes: BulkScreenOutcome[], freshRecords: Record<string, AgentScreeningResult>) {
+    if (Object.keys(freshRecords).length > 0) {
+      setScreeningResults((prev) => ({ ...prev, ...freshRecords }))
+    }
+    setApplications((prev) =>
+      prev.map((a) => {
+        const outcome = outcomes.find((o) => o.applicationId === a.id && o.statusUpdated)
+        return outcome ? { ...a, status: outcome.statusUpdated as Application['status'] } : a
+      })
+    )
+  }
+
+  async function pollBulkScreenJob(jobId: string) {
+    const mergedApplicationIds = new Set<string>()
+
+    while (true) {
+      const { job, error } = await getBulkScreenJobStatus(jobId)
+
+      if (error || !job) {
+        setBatchError(error || 'Lost connection to the bulk screening job.')
+        break
+      }
+
+      setBatchProgress({ current: job.succeeded + job.failed, total: job.total })
+
+      const newlySucceeded = job.results.filter(
+        (r) => r.success && !mergedApplicationIds.has(r.applicationId)
+      )
+      if (newlySucceeded.length > 0) {
+        newlySucceeded.forEach((r) => mergedApplicationIds.add(r.applicationId))
+        const freshRecords = await getScreeningResultsForApplications(newlySucceeded.map((r) => r.applicationId))
+        applyBulkOutcomesToState(job.results, freshRecords)
+      }
+
+      const newlyFailed = job.results.filter((r) => !r.success && !mergedApplicationIds.has(r.applicationId))
+      newlyFailed.forEach((r) => mergedApplicationIds.add(r.applicationId))
+
+      if (job.status !== 'running') {
+        if (job.status === 'failed') setBatchError(job.error || 'Bulk screening job failed.')
+        break
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+    }
+
+    try {
+      localStorage.removeItem(BULK_SCREEN_JOB_STORAGE_KEY)
+    } catch {
+      // localStorage unavailable — nothing to clean up
+    }
+    setBatchScreening(false)
+    setBatchProgress(null)
+    setBatchJobId(null)
+  }
+
   async function handleBatchScreen() {
     const unscanned = applications.filter((a) => !screeningResults[a.id])
     if (unscanned.length === 0) return
 
     setBatchScreening(true)
+    setBatchError(null)
     setBatchProgress({ current: 0, total: unscanned.length })
 
-    for (let i = 0; i < unscanned.length; i++) {
-      const app = unscanned[i]
-      setBatchProgress({ current: i + 1, total: unscanned.length })
-      await handleScreenCandidate(app.id, false)
+    const { jobId, error } = await startBulkScreenAction(unscanned.map((a) => a.id))
+
+    if (error && !jobId) {
+      setBatchError(error)
+      setBatchScreening(false)
+      setBatchProgress(null)
+      return
     }
 
-    setBatchScreening(false)
-    setBatchProgress(null)
+    setBatchJobId(jobId!)
+    try {
+      localStorage.setItem(BULK_SCREEN_JOB_STORAGE_KEY, jobId!)
+    } catch {
+      // localStorage unavailable — batch still runs, just won't resume across a reload
+    }
+
+    await pollBulkScreenJob(jobId!)
+  }
+
+  // Resume polling an in-flight bulk screening job after a page reload,
+  // since the job itself runs durably server-side regardless of this tab.
+  useEffect(() => {
+    let cancelled = false
+    try {
+      const savedJobId = localStorage.getItem(BULK_SCREEN_JOB_STORAGE_KEY)
+      if (savedJobId) {
+        setBatchScreening(true)
+        setBatchJobId(savedJobId)
+        ;(async () => {
+          if (!cancelled) await pollBulkScreenJob(savedJobId)
+        })()
+      }
+    } catch {
+      // localStorage unavailable — nothing to resume
+    }
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handleBulkEmail() {
+    setBulkEmailSending(true)
+    setBulkEmailError(null)
+    setBulkEmailResult(null)
+    try {
+      const res = await dispatchEmailsAction([])
+      if (res.error) {
+        setBulkEmailError(res.error)
+      } else {
+        setBulkEmailResult({
+          sentCount: res.sentCount ?? 0,
+          skippedCount: res.skippedCount ?? 0,
+          failedCount: res.failedCount ?? 0,
+        })
+        setScreeningResults((prev) => {
+          const next = { ...prev }
+          res.results?.forEach((r) => {
+            if (r.status === 'sent' && r.applicationId && next[r.applicationId]) {
+              next[r.applicationId] = { ...next[r.applicationId], email_sent: true }
+            }
+          })
+          return next
+        })
+      }
+    } catch (err: any) {
+      setBulkEmailError(err.message || 'Email dispatch failed')
+    } finally {
+      setBulkEmailSending(false)
+    }
   }
 
   function handleLoadFeedbackToEmail(screening: AgentScreeningResult) {
@@ -219,19 +401,104 @@ export default function ApplicationsClient({
   }, {} as Record<Application['status'], number>)
 
   const unscannedCount = applications.filter((a) => !screeningResults[a.id]).length
+  const pendingEmailCount = applications.filter((a) => screeningResults[a.id] && !screeningResults[a.id].email_sent).length
   const selectedScreening = selected ? screeningResults[selected.id] : null
   const selectedConsensus = selectedScreening ? ((selectedScreening.full_result as any)?.consensus || selectedScreening.full_result) : null
+  const selectedLayer2    = selectedConsensus?.layer2ArtifactScorecard ?? null
+  const selectedArtifacts = selectedConsensus?.inspectedArtifacts ?? null
+  const selectedReportId  = selectedConsensus?.publicFeedbackReport?.reportId ?? rebuttalStatuses[selected?.id ?? '']?.reportId ?? null
+  const selectedReportUrl = selectedReportId ? `https://www.nextrium.org/feedback/${selectedReportId}` : null
+  const selectedRebuttal  = selected ? rebuttalStatuses[selected.id] : null
+
+  function handleCopyReportUrl() {
+    if (!selectedReportUrl) return
+    navigator.clipboard.writeText(selectedReportUrl)
+    setCopiedReportUrl(true)
+    setTimeout(() => setCopiedReportUrl(false), 2000)
+  }
+
+  const availableTracks = Array.from(
+    new Set(Object.values(screeningResults).map((s) => s.evaluation_track).filter(Boolean))
+  ) as string[]
+
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortField(field)
+      setSortDir('asc')
+    }
+  }
+
+  function sortIndicator(field: SortField) {
+    if (sortField !== field) return ''
+    return sortDir === 'asc' ? ' ▲' : ' ▼'
+  }
+
+  const tableRows = applications
+    .filter((app) => {
+      const screening = screeningResults[app.id]
+      if (minScoreFilter.trim()) {
+        const min = Number(minScoreFilter)
+        if (!screening || screening.composite_score < min) return false
+      }
+      if (trackFilter.length > 0) {
+        if (!screening || !trackFilter.includes(screening.evaluation_track)) return false
+      }
+      if (recFilter.length > 0) {
+        if (!recFilter.includes(app.status)) return false
+      }
+      return true
+    })
+    .sort((a, b) => {
+      const sa = screeningResults[a.id]
+      const sb = screeningResults[b.id]
+      let av: string | number = ''
+      let bv: string | number = ''
+      switch (sortField) {
+        case 'name':             av = a.name; bv = b.name; break
+        case 'role':             av = a.role_title ?? ''; bv = b.role_title ?? ''; break
+        case 'evaluation_track': av = sa?.evaluation_track ?? ''; bv = sb?.evaluation_track ?? ''; break
+        case 'composite_score':  av = sa?.composite_score ?? -1; bv = sb?.composite_score ?? -1; break
+        case 'consensus_tier':   av = sa?.consensus_tier ?? ''; bv = sb?.consensus_tier ?? ''; break
+        case 'recommendation':   av = sa?.recommendation ?? ''; bv = sb?.recommendation ?? ''; break
+        case 'rebuttal':         av = rebuttalStatuses[a.id]?.rebuttalSubmitted ? 1 : 0; bv = rebuttalStatuses[b.id]?.rebuttalSubmitted ? 1 : 0; break
+        case 'screened_at':      av = sa?.screened_at ?? ''; bv = sb?.screened_at ?? ''; break
+      }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1
+      if (av > bv) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
+
+  function toggleTrackFilter(track: string) {
+    setTrackFilter((prev) => prev.includes(track) ? prev.filter((t) => t !== track) : [...prev, track])
+  }
+
+  function toggleRecFilter(status: Application['status']) {
+    setRecFilter((prev) => prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status])
+  }
+
+  function selectApp(app: Application) {
+    setSelected(app)
+    setConfirmDelete(false)
+    setEmailOpen(false)
+    setEmailResult(null)
+    setEmailAttachFiles([])
+    setScreeningError(null)
+  }
 
   return (
     <>
       <style>{`
         .apps-layout { display: grid; grid-template-columns: 1fr 480px; gap: 24px; align-items: start; }
-        .apps-panel { background: var(--navy); border: 1px solid rgba(255,255,255,0.06); }
+        .apps-panel { background: var(--navy); border: 1px solid rgba(255,255,255,0.06); position: sticky; top: 24px; max-height: calc(100vh - 48px); display: flex; flex-direction: column; overflow: hidden; }
+        .apps-list-scroll { flex: 1; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+        .apps-list-scroll::-webkit-scrollbar { display: none; }
         .apps-count-row { display: flex; gap: 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
         .apps-count-item { flex: 1; padding: 12px 8px; text-align: center; border-right: 1px solid rgba(255,255,255,0.04); }
         .apps-count-item:last-child { border-right: none; }
         .apps-count-num { font-family: var(--font-exo2); font-weight: 800; font-size: 20px; color: var(--white); line-height: 1; }
-        .apps-count-label { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--grey-dark); margin-top: 4px; }
+        .apps-count-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--grey-dark); margin-top: 4px; }
         
         .ai-banner-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: rgba(34,193,122,0.04); border-bottom: 1px solid rgba(255,255,255,0.06); }
         .ai-banner-text { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: #22c17a; display: flex; align-items: center; gap: 6px; }
@@ -247,8 +514,8 @@ export default function ApplicationsClient({
         .app-name { font-size: 14px; color: var(--white); font-weight: 500; }
         .app-role { font-size: 11px; color: var(--grey-mid); margin-bottom: 4px; }
         .app-date { font-size: 10px; color: var(--grey-dark); font-family: var(--font-mono); }
-        .dash-badge { font-family: var(--font-mono); font-size: 7.5px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; display: inline-block; white-space: nowrap; }
-        .ai-score-badge { font-family: var(--font-mono); font-size: 7.5px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; display: inline-block; white-space: nowrap; margin-left: 6px; }
+        .dash-badge { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; display: inline-block; white-space: nowrap; }
+        .ai-score-badge { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; display: inline-block; white-space: nowrap; margin-left: 6px; }
 
         .detail-panel { background: var(--navy); border: 1px solid rgba(255,255,255,0.06); position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow-y: auto; }
         .detail-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.06); }
@@ -278,8 +545,60 @@ export default function ApplicationsClient({
         .rubric-label { color: var(--grey-mid); }
         .rubric-val { font-family: var(--font-mono); font-size: 10.5px; color: var(--white); }
         .q-card { padding: 10px 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); }
-        
-        @media (max-width: 1200px) { .apps-layout { grid-template-columns: 1fr; } .detail-panel { position: static; max-height: none; } }
+
+        @keyframes screening-step-fade { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+        .screening-step-text { animation: screening-step-fade 0.35s ease; }
+
+        .track-badge { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 9px; display: inline-block; background: rgba(74,111,165,0.1); color: var(--slate); border: 1px solid rgba(74,111,165,0.3); }
+        .rescan-btn { padding: 5px 10px; font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: none; color: var(--grey-mid); transition: all 0.15s ease; }
+        .rescan-btn:hover:not(:disabled) { color: var(--white); border-color: rgba(255,255,255,0.25); }
+        .rescan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .layer2-box { display: flex; flex-direction: column; gap: 10px; padding: 12px; background: rgba(74,111,165,0.03); border: 1px solid rgba(74,111,165,0.15); }
+        .layer2-header { display: flex; align-items: center; justify-content: space-between; }
+        .layer2-title { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--slate); }
+        .layer2-status { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; }
+        .artifact-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 11.5px; }
+        .artifact-row:last-child { border-bottom: none; }
+        .artifact-label { color: var(--grey-mid); flex-shrink: 0; }
+        .artifact-val { color: var(--off-white); text-align: right; }
+        .artifact-val.ok { color: #22c17a; }
+        .artifact-val.bad { color: var(--error); }
+
+        .report-link-box { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); }
+        .report-link-url { flex: 1; font-family: var(--font-mono); font-size: 11px; color: var(--off-white); word-break: break-all; }
+        .report-copy-btn { padding: 6px 10px; font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; border: 1px solid rgba(219,103,39,0.3); background: rgba(219,103,39,0.08); color: var(--orange); flex-shrink: 0; transition: all 0.15s ease; }
+        .report-copy-btn:hover { background: var(--orange); color: var(--white); }
+
+        .rebuttal-indicator { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 10px; display: inline-block; }
+        .rebuttal-indicator.pending { background: rgba(219,103,39,0.12); color: var(--orange); border: 1px solid rgba(219,103,39,0.35); }
+        .rebuttal-indicator.locked { background: rgba(255,255,255,0.03); color: var(--grey-mid); border: 1px solid rgba(255,255,255,0.1); }
+        .rebuttal-indicator.none { background: rgba(255,255,255,0.02); color: var(--grey-dark); border: 1px solid rgba(255,255,255,0.06); }
+
+        .view-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .view-toggle { display: flex; gap: 0; border: 1px solid rgba(255,255,255,0.1); }
+        .view-toggle-btn { padding: 6px 14px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; border: none; background: none; color: var(--grey-mid); transition: all 0.15s ease; }
+        .view-toggle-btn.active { background: rgba(219,103,39,0.12); color: var(--orange); }
+        .view-toggle-btn + .view-toggle-btn { border-left: 1px solid rgba(255,255,255,0.1); }
+
+        .table-filters { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.01); }
+        .table-filter-group { display: flex; align-items: center; gap: 6px; }
+        .table-filter-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--grey-mid); }
+        .table-filter-input { background: var(--navy-mid); border: 1px solid rgba(255,255,255,0.08); color: var(--white); font-family: var(--font-mono); font-size: 11px; padding: 5px 8px; outline: none; width: 70px; }
+        .table-filter-chip { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 9px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: none; color: var(--grey-mid); transition: all 0.15s ease; }
+        .table-filter-chip.active { border-color: var(--orange); color: var(--orange); background: rgba(219,103,39,0.08); }
+
+        .apps-table-wrap { overflow-x: auto; }
+        .apps-table { width: 100%; border-collapse: collapse; }
+        .apps-table th { text-align: left; padding: 10px 14px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--grey-mid); border-bottom: 1px solid rgba(255,255,255,0.08); cursor: pointer; white-space: nowrap; user-select: none; }
+        .apps-table th:hover { color: var(--white); }
+        .apps-table td { padding: 11px 14px; font-size: 12.5px; color: var(--off-white); border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; }
+        .apps-table tr.table-row { cursor: pointer; transition: background 0.15s ease; }
+        .apps-table tr.table-row:hover { background: rgba(255,255,255,0.03); }
+        .apps-table tr.table-row.selected { background: rgba(219,103,39,0.06); }
+        .table-empty { padding: 48px 24px; text-align: center; font-size: 13px; color: var(--grey-dark); }
+
+        @media (max-width: 1200px) { .apps-layout { grid-template-columns: 1fr; } .detail-panel { position: static; max-height: none; } .apps-panel { position: static; max-height: none; } .apps-list-scroll { overflow-y: visible; } }
       `}</style>
 
       {applications.length === 0 ? (
@@ -311,76 +630,225 @@ export default function ApplicationsClient({
                   </span>
                 )}
               </div>
-              {unscannedCount > 0 ? (
-                <button
-                  type="button"
-                  onClick={handleBatchScreen}
-                  disabled={batchScreening || screeningId !== null}
-                  className="ai-batch-btn"
-                >
-                  {batchScreening ? 'Screening in progress...' : `⚡ Auto-Screen All (${unscannedCount})`}
-                </button>
-              ) : (
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: '#22c17a', letterSpacing: '0.1em' }}>
-                  ✓ All Screened
-                </span>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {unscannedCount > 0 ? (
+                  <button
+                    type="button"
+                    onClick={handleBatchScreen}
+                    disabled={batchScreening || screeningId !== null}
+                    className="ai-batch-btn"
+                  >
+                    {batchScreening ? 'Screening in progress...' : `⚡ Auto-Screen All (${unscannedCount})`}
+                  </button>
+                ) : (
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: '#22c17a', letterSpacing: '0.1em' }}>
+                    ✓ All Screened
+                  </span>
+                )}
+                {pendingEmailCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleBulkEmail}
+                    disabled={bulkEmailSending}
+                    className="ai-batch-btn"
+                  >
+                    {bulkEmailSending ? 'Sending feedback emails...' : `📧 Send AI Feedback Emails (${pendingEmailCount})`}
+                  </button>
+                )}
+              </div>
             </div>
 
-            {applications.map((app) => {
-              const ss = STATUS_STYLES[app.status]
-              const screening = screeningResults[app.id]
-              const scoreConfig = screening ? getScoreColor(screening.composite_score) : null
+            {(bulkEmailResult || bulkEmailError) && (
+              <div style={{ padding: '8px 16px', fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.05em', borderBottom: '1px solid rgba(255,255,255,0.06)', color: bulkEmailError ? 'var(--error)' : '#22c17a' }}>
+                {bulkEmailError
+                  ? `Email dispatch failed: ${bulkEmailError}`
+                  : `Dispatch complete: ${bulkEmailResult!.sentCount} sent, ${bulkEmailResult!.skippedCount} skipped, ${bulkEmailResult!.failedCount} failed.`}
+              </div>
+            )}
 
-              return (
-                <div
-                  key={app.id}
-                  className={`app-row ${selected?.id === app.id ? 'selected' : ''}`}
-                  onClick={() => {
-                    setSelected(app)
-                    setConfirmDelete(false)
-                    setEmailOpen(false)
-                    setEmailResult(null)
-                    setEmailAttachFiles([])
-                    setScreeningError(null)
-                  }}
+            {batchError && (
+              <div style={{ padding: '8px 16px', fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.05em', borderBottom: '1px solid rgba(255,255,255,0.06)', color: 'var(--error)' }}>
+                Bulk screening error: {batchError}
+              </div>
+            )}
+
+            <div className="view-toggle-row">
+              <div className="view-toggle">
+                <button
+                  type="button"
+                  className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                  onClick={() => setViewMode('list')}
                 >
-                  <div className="app-row-top">
-                    <span className="app-name">{app.name}</span>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span className="dash-badge" style={{ background: ss.bg, color: ss.color, border: `1px solid ${ss.color}33` }}>
-                        {app.status}
-                      </span>
-                      {screening ? (
-                        <span
-                          className="ai-score-badge"
-                          style={{
-                            background: scoreConfig?.bg,
-                            color: scoreConfig?.color,
-                            border: `1px solid ${scoreConfig?.border}`,
-                          }}
-                        >
-                          ⚡ {screening.composite_score}%
-                        </span>
-                      ) : (
-                        <span
-                          className="ai-score-badge"
-                          style={{
-                            background: 'rgba(255,255,255,0.03)',
-                            color: 'var(--grey-dark)',
-                            border: '1px solid rgba(255,255,255,0.06)',
-                          }}
-                        >
-                          Unscreened
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="app-role">{app.role_title ?? 'Open application'}</div>
-                  <div className="app-date">{new Date(app.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                  List
+                </button>
+                <button
+                  type="button"
+                  className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+                  onClick={() => setViewMode('table')}
+                >
+                  Table
+                </button>
+              </div>
+            </div>
+
+            {viewMode === 'table' && (
+              <div className="table-filters">
+                <div className="table-filter-group">
+                  <span className="table-filter-label">Min score</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="table-filter-input"
+                    value={minScoreFilter}
+                    onChange={(e) => setMinScoreFilter(e.target.value)}
+                    placeholder="0"
+                  />
                 </div>
-              )
-            })}
+                {availableTracks.length > 0 && (
+                  <div className="table-filter-group">
+                    <span className="table-filter-label">Track</span>
+                    {availableTracks.map((track) => (
+                      <button
+                        key={track}
+                        type="button"
+                        className={`table-filter-chip ${trackFilter.includes(track) ? 'active' : ''}`}
+                        onClick={() => toggleTrackFilter(track)}
+                      >
+                        {track}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="table-filter-group">
+                  <span className="table-filter-label">Status</span>
+                  {STATUS_OPTIONS.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      className={`table-filter-chip ${recFilter.includes(s) ? 'active' : ''}`}
+                      onClick={() => toggleRecFilter(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="apps-list-scroll">
+            {viewMode === 'list' ? (
+              applications.map((app) => {
+                const ss = STATUS_STYLES[app.status]
+                const screening = screeningResults[app.id]
+                const scoreConfig = screening ? getScoreColor(screening.composite_score) : null
+
+                return (
+                  <div
+                    key={app.id}
+                    className={`app-row ${selected?.id === app.id ? 'selected' : ''}`}
+                    onClick={() => selectApp(app)}
+                  >
+                    <div className="app-row-top">
+                      <span className="app-name">{app.name}</span>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span className="dash-badge" style={{ background: ss.bg, color: ss.color, border: `1px solid ${ss.color}33` }}>
+                          {app.status}
+                        </span>
+                        {screening ? (
+                          <span
+                            className="ai-score-badge"
+                            style={{
+                              background: scoreConfig?.bg,
+                              color: scoreConfig?.color,
+                              border: `1px solid ${scoreConfig?.border}`,
+                            }}
+                          >
+                            ⚡ {screening.composite_score}%
+                          </span>
+                        ) : (
+                          <span
+                            className="ai-score-badge"
+                            style={{
+                              background: 'rgba(74,111,165,0.1)',
+                              color: 'var(--slate)',
+                              border: '1px solid rgba(74,111,165,0.3)',
+                            }}
+                          >
+                            Unscreened
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="app-role">{app.role_title ?? 'Open application'}</div>
+                    <div className="app-date">{new Date(app.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                  </div>
+                )
+              })
+            ) : (
+              <div className="apps-table-wrap">
+                {tableRows.length === 0 ? (
+                  <div className="table-empty">No applications match the current filters.</div>
+                ) : (
+                  <table className="apps-table">
+                    <thead>
+                      <tr>
+                        <th onClick={() => handleSort('name')}>Candidate{sortIndicator('name')}</th>
+                        <th onClick={() => handleSort('role')}>Role{sortIndicator('role')}</th>
+                        <th onClick={() => handleSort('evaluation_track')}>Track{sortIndicator('evaluation_track')}</th>
+                        <th onClick={() => handleSort('composite_score')}>Score{sortIndicator('composite_score')}</th>
+                        <th onClick={() => handleSort('consensus_tier')}>Tier{sortIndicator('consensus_tier')}</th>
+                        <th onClick={() => handleSort('recommendation')}>Status{sortIndicator('recommendation')}</th>
+                        <th onClick={() => handleSort('rebuttal')}>Rebuttal{sortIndicator('rebuttal')}</th>
+                        <th onClick={() => handleSort('screened_at')}>Screened{sortIndicator('screened_at')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tableRows.map((app) => {
+                        const ss = STATUS_STYLES[app.status]
+                        const screening = screeningResults[app.id]
+                        const scoreConfig = screening ? getScoreColor(screening.composite_score) : null
+                        const rebuttal = rebuttalStatuses[app.id]
+
+                        return (
+                          <tr
+                            key={app.id}
+                            className={`table-row ${selected?.id === app.id ? 'selected' : ''}`}
+                            onClick={() => selectApp(app)}
+                          >
+                            <td>{app.name}</td>
+                            <td>{app.role_title ?? 'Open application'}</td>
+                            <td>{screening?.evaluation_track ?? '—'}</td>
+                            <td>
+                              {screening ? (
+                                <span style={{ color: scoreConfig?.color, fontFamily: 'var(--font-mono)' }}>
+                                  {screening.composite_score}%
+                                </span>
+                              ) : '—'}
+                            </td>
+                            <td>{screening?.consensus_tier ?? '—'}</td>
+                            <td>
+                              <span className="dash-badge" style={{ background: ss.bg, color: ss.color, border: `1px solid ${ss.color}33` }}>
+                                {app.status}
+                              </span>
+                            </td>
+                            <td>
+                              {rebuttal?.rebuttalLocked ? (
+                                <span className="rebuttal-indicator locked">Closed</span>
+                              ) : rebuttal?.rebuttalSubmitted ? (
+                                <span className="rebuttal-indicator pending">Submitted</span>
+                              ) : '—'}
+                            </td>
+                            <td>{screening ? new Date(screening.screened_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+            </div>
           </div>
 
           <div className="detail-panel">
@@ -403,15 +871,7 @@ export default function ApplicationsClient({
                           type="button"
                           onClick={() => handleScreenCandidate(selected.id, true)}
                           disabled={screeningId === selected.id}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '8px',
-                            color: 'var(--grey-mid)',
-                            cursor: 'pointer',
-                            textDecoration: 'underline',
-                          }}
+                          className="rescan-btn"
                         >
                           {screeningId === selected.id ? 'Rescanning...' : '🔄 Rescan'}
                         </button>
@@ -429,8 +889,12 @@ export default function ApplicationsClient({
                         <div style={{ fontSize: '13px', color: '#22c17a', fontWeight: 600 }}>
                           Evaluating candidate...
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--grey-mid)' }}>
-                          Running dual-layer consensus (Gemini 2.0 Flash + Live Artifact Verifier)
+                        <div
+                          key={screeningStep}
+                          className="screening-step-text"
+                          style={{ fontSize: '11px', color: 'var(--grey-mid)' }}
+                        >
+                          {SCREENING_STEPS[screeningStep]}
                         </div>
                       </div>
                     ) : selectedScreening && selectedConsensus ? (
@@ -468,10 +932,35 @@ export default function ApplicationsClient({
                               }}
                             />
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--grey-mid)', marginTop: '4px' }}>
-                            Tier: <strong style={{ color: 'var(--white)' }}>{selectedScreening.consensus_tier}</strong>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '6px' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--grey-mid)' }}>
+                              Tier: <strong style={{ color: 'var(--white)' }}>{selectedScreening.consensus_tier}</strong>
+                            </div>
+                            {selectedScreening.evaluation_track && (
+                              <span className="track-badge">{selectedScreening.evaluation_track}</span>
+                            )}
+                            {selectedRebuttal?.rebuttalLocked ? (
+                              <span className="rebuttal-indicator locked">Rebuttal closed</span>
+                            ) : selectedRebuttal?.rebuttalSubmitted ? (
+                              <span className="rebuttal-indicator pending">⚠ Rebuttal submitted</span>
+                            ) : selectedRebuttal ? (
+                              <span className="rebuttal-indicator none">No rebuttal submitted</span>
+                            ) : null}
                           </div>
                         </div>
+
+                        {/* Public feedback report link */}
+                        {selectedReportUrl && (
+                          <div>
+                            <div className="detail-section-title">Public feedback report</div>
+                            <div className="report-link-box">
+                              <span className="report-link-url">{selectedReportUrl}</span>
+                              <button type="button" className="report-copy-btn" onClick={handleCopyReportUrl}>
+                                {copiedReportUrl ? '✓ Copied' : 'Copy'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Executive Summary */}
                         {selectedConsensus.recruiterConsensusSummary && (
@@ -479,7 +968,7 @@ export default function ApplicationsClient({
                             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', textTransform: 'uppercase', color: '#22c17a', marginBottom: '4px', letterSpacing: '0.1em' }}>
                               Recruiter Briefing
                             </div>
-                            {selectedConsensus.recruiterConsensusSummary}
+                            {asDisplayText(selectedConsensus.recruiterConsensusSummary)}
                           </div>
                         )}
 
@@ -512,7 +1001,7 @@ export default function ApplicationsClient({
                               </div>
                               <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '11.5px', color: 'var(--off-white)', lineHeight: '1.6' }}>
                                 {selectedConsensus.layer1ResumeScorecard.coreStrengths.map((s: string, idx: number) => (
-                                  <li key={idx}>{s}</li>
+                                  <li key={idx}>{asDisplayText(s)}</li>
                                 ))}
                               </ul>
                             </div>
@@ -525,12 +1014,150 @@ export default function ApplicationsClient({
                               </div>
                               <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '11.5px', color: 'var(--off-white)', lineHeight: '1.6' }}>
                                 {selectedConsensus.layer1ResumeScorecard.gapsAndRedFlags.map((g: string, idx: number) => (
-                                  <li key={idx}>{g}</li>
+                                  <li key={idx}>{asDisplayText(g)}</li>
                                 ))}
                               </ul>
                             </div>
                           )}
                         </div>
+
+                        {/* Layer 2: Live Artifact Verification */}
+                        {selectedLayer2 && (
+                          <div className="layer2-box">
+                            <div className="layer2-header">
+                              <span className="layer2-title">🔍 Layer 2 — Artifact Verification</span>
+                              <span
+                                className="layer2-status"
+                                style={{
+                                  background: getScoreColor(selectedLayer2.artifactVerificationScore).bg,
+                                  color: getScoreColor(selectedLayer2.artifactVerificationScore).color,
+                                  border: `1px solid ${getScoreColor(selectedLayer2.artifactVerificationScore).border}`,
+                                }}
+                              >
+                                {selectedLayer2.artifactVerificationScore}% · {selectedLayer2.verificationStatus}
+                              </span>
+                            </div>
+
+                            {selectedLayer2.reputationSummary && (
+                              <div style={{ fontSize: '11.5px', color: 'var(--off-white)', lineHeight: '1.6' }}>
+                                {asDisplayText(selectedLayer2.reputationSummary)}
+                              </div>
+                            )}
+
+                            {selectedLayer2.rubricBreakdown && Object.keys(selectedLayer2.rubricBreakdown).length > 0 && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {Object.entries(selectedLayer2.rubricBreakdown).map(([key, item]: [string, any]) => (
+                                  <div key={key}>
+                                    <div className="rubric-row">
+                                      <span className="rubric-label">{key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}</span>
+                                      <span className="rubric-val">{item.score}/{item.weight}</span>
+                                    </div>
+                                    <div style={{ width: '100%', height: '3px', background: 'rgba(255,255,255,0.04)', overflow: 'hidden' }}>
+                                      <div style={{ width: `${(item.score / item.weight) * 100}%`, height: '100%', background: 'var(--slate)' }} />
+                                    </div>
+                                    {item.reasoning && (
+                                      <div style={{ fontSize: '10.5px', color: 'var(--grey-mid)', marginTop: '2px' }}>{item.reasoning}</div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {Array.isArray(selectedLayer2.verifiedStrengths) && selectedLayer2.verifiedStrengths.length > 0 && (
+                              <div style={{ padding: '10px 12px', background: 'rgba(34,193,122,0.04)', border: '1px solid rgba(34,193,122,0.15)' }}>
+                                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', textTransform: 'uppercase', color: '#22c17a', marginBottom: '6px', letterSpacing: '0.1em' }}>
+                                  ✓ Verified Public Artifacts
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '11.5px', color: 'var(--off-white)', lineHeight: '1.6' }}>
+                                  {selectedLayer2.verifiedStrengths.map((s: string, idx: number) => (
+                                  <li key={idx}>{asDisplayText(s)}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {Array.isArray(selectedLayer2.artifactGapsAndRisks) && selectedLayer2.artifactGapsAndRisks.length > 0 && (
+                              <div style={{ padding: '10px 12px', background: 'rgba(232,69,69,0.04)', border: '1px solid rgba(232,69,69,0.2)' }}>
+                                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', textTransform: 'uppercase', color: 'var(--error)', marginBottom: '6px', letterSpacing: '0.1em' }}>
+                                  ⚠ Artifact Gaps / Risks
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '11.5px', color: 'var(--off-white)', lineHeight: '1.6' }}>
+                                  {selectedLayer2.artifactGapsAndRisks.map((g: string, idx: number) => (
+                                  <li key={idx}>{asDisplayText(g)}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {selectedArtifacts && (
+                              <div>
+                                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', textTransform: 'uppercase', color: 'var(--grey-mid)', marginBottom: '4px', letterSpacing: '0.1em' }}>
+                                  Inspected Artifacts
+                                </div>
+                                <div>
+                                  {selectedArtifacts.github && (
+                                    <div className="artifact-row">
+                                      <span className="artifact-label">GitHub — {selectedArtifacts.github.username}</span>
+                                      <span className={`artifact-val ${selectedArtifacts.github.profileFound ? 'ok' : 'bad'}`}>
+                                        {selectedArtifacts.github.profileFound
+                                          ? `${selectedArtifacts.github.publicRepoCount} repos · ${selectedArtifacts.github.followersCount} followers`
+                                          : 'Profile not found'}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {selectedArtifacts.portfolioCheck && (
+                                    <div className="artifact-row">
+                                      <span className="artifact-label">Portfolio</span>
+                                      <span className={`artifact-val ${selectedArtifacts.portfolioCheck.accessible ? 'ok' : 'bad'}`}>
+                                        {selectedArtifacts.portfolioCheck.accessible ? `Reachable (${selectedArtifacts.portfolioCheck.statusCode ?? 'OK'})` : asDisplayText(selectedArtifacts.portfolioCheck.note || selectedArtifacts.portfolioCheck.error || 'Unreachable')}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {selectedArtifacts.linkedinCheck && (
+                                    <div className="artifact-row">
+                                      <span className="artifact-label">LinkedIn</span>
+                                      <span className={`artifact-val ${selectedArtifacts.linkedinCheck.accessible ? 'ok' : 'bad'}`}>
+                                        {selectedArtifacts.linkedinCheck.accessible ? 'Reachable' : asDisplayText(selectedArtifacts.linkedinCheck.note || selectedArtifacts.linkedinCheck.error || 'Unreachable')}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {selectedArtifacts.designCheck && (
+                                    <div className="artifact-row">
+                                      <span className="artifact-label">Design portfolio</span>
+                                      <span className={`artifact-val ${selectedArtifacts.designCheck.accessible ? 'ok' : 'bad'}`}>
+                                        {selectedArtifacts.designCheck.accessible ? 'Reachable' : asDisplayText(selectedArtifacts.designCheck.note || selectedArtifacts.designCheck.error || 'Unreachable')}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {selectedArtifacts.publishedWorkCheck && (
+                                    <div className="artifact-row">
+                                      <span className="artifact-label">Published work</span>
+                                      <span className={`artifact-val ${selectedArtifacts.publishedWorkCheck.accessible ? 'ok' : 'bad'}`}>
+                                        {selectedArtifacts.publishedWorkCheck.accessible ? 'Reachable' : asDisplayText(selectedArtifacts.publishedWorkCheck.note || selectedArtifacts.publishedWorkCheck.error || 'Unreachable')}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {selectedArtifacts.blogCheck && (
+                                    <div className="artifact-row">
+                                      <span className="artifact-label">Blog</span>
+                                      <span className={`artifact-val ${selectedArtifacts.blogCheck.accessible ? 'ok' : 'bad'}`}>
+                                        {selectedArtifacts.blogCheck.accessible ? 'Reachable' : asDisplayText(selectedArtifacts.blogCheck.note || selectedArtifacts.blogCheck.error || 'Unreachable')}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {Array.isArray(selectedArtifacts.otherLinks) && selectedArtifacts.otherLinks.map((link: any, i: number) => (
+                                    <div className="artifact-row" key={i}>
+                                      <span className="artifact-label">{asDisplayText(link.url)}</span>
+                                      <span className={`artifact-val ${link.accessible ? 'ok' : 'bad'}`}>
+                                        {link.accessible ? 'Reachable' : asDisplayText(link.note || link.error || 'Unreachable')}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         {/* Tailored Interview Questions */}
                         {Array.isArray(selectedConsensus.combinedInterviewQuestions) && selectedConsensus.combinedInterviewQuestions.length > 0 && (
@@ -563,8 +1190,8 @@ export default function ApplicationsClient({
                                 {selectedConsensus.combinedInterviewQuestions.map((q: any, qIdx: number) => (
                                   <div key={qIdx} className="q-card">
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '7.5px', textTransform: 'uppercase', color: 'var(--orange)' }}>
-                                        {q.category}
+                                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', textTransform: 'uppercase', color: 'var(--orange)' }}>
+                                        {asDisplayText(q.category)}
                                       </span>
                                       <button
                                         type="button"
@@ -575,11 +1202,11 @@ export default function ApplicationsClient({
                                       </button>
                                     </div>
                                     <div style={{ fontSize: '12px', color: 'var(--white)', marginBottom: '4px' }}>
-                                      {q.question}
+                                      {asDisplayText(q.question)}
                                     </div>
                                     {q.idealAnswerCriteria && (
-                                      <div style={{ fontSize: '10.5px', color: 'var(--grey-dark)', fontStyle: 'italic' }}>
-                                        Criteria: {q.idealAnswerCriteria}
+                                      <div style={{ fontSize: '10.5px', color: 'var(--slate)', fontStyle: 'italic' }}>
+                                        Criteria: {asDisplayText(q.idealAnswerCriteria)}
                                       </div>
                                     )}
                                   </div>
@@ -817,7 +1444,7 @@ export default function ApplicationsClient({
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '4px' }}>
                           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-dark)' }}>File uploads</div>
-                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(219,103,39,0.3)', color: 'var(--orange)', padding: '5px 10px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '7px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(219,103,39,0.3)', color: 'var(--orange)', padding: '5px 10px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                             + Attach files
                             <input
                               type="file"
@@ -835,7 +1462,7 @@ export default function ApplicationsClient({
                                   <button type="button" onClick={() => removeEmailFile(i)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '11px', padding: '0 4px' }}>✕</button>
                                 </div>
                               ))}
-                              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--grey-mid)', padding: '4px 8px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '7px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--grey-mid)', padding: '4px 8px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                                 + Add more files
                                 <input
                                   type="file"

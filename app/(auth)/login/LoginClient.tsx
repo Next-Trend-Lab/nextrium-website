@@ -20,7 +20,6 @@ export default function LoginClient({ message, error: initialError }: { message?
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
     if (authError) {
       setError(authError.message || 'Invalid email or password.')
-      setLoading(false)
       return
     }
     router.push('/dashboard')

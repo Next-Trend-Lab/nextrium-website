@@ -502,6 +502,7 @@ export type Database = {
           composite_score: number
           consensus_tier: string
           recommendation: string
+          evaluation_track: string
           full_result: Json
           screened_at: string
           email_sent: boolean
@@ -515,6 +516,7 @@ export type Database = {
           composite_score: number
           consensus_tier: string
           recommendation: string
+          evaluation_track?: string
           full_result: Json
           screened_at?: string
           email_sent?: boolean
@@ -525,10 +527,49 @@ export type Database = {
           composite_score?: number
           consensus_tier?: string
           recommendation?: string
+          evaluation_track?: string
           full_result?: Json
           screened_at?: string
           email_sent?: boolean
           webhook_sent?: boolean
+        }
+      }
+      screening_reports: {
+        Row: {
+          id: string
+          application_id: string
+          composite_score: number
+          evaluation_track: string
+          recommendation: string
+          consensus_tier: string
+          feedback_body: string
+          dimension_scores: Json
+          rebuttal_submitted: boolean
+          rebuttal_locked: boolean
+          created_at?: string
+        }
+        Insert: {
+          id: string
+          application_id: string
+          composite_score: number
+          evaluation_track?: string
+          recommendation: string
+          consensus_tier: string
+          feedback_body: string
+          dimension_scores?: Json
+          rebuttal_submitted?: boolean
+          rebuttal_locked?: boolean
+          created_at?: string
+        }
+        Update: {
+          composite_score?: number
+          evaluation_track?: string
+          recommendation?: string
+          consensus_tier?: string
+          feedback_body?: string
+          dimension_scores?: Json
+          rebuttal_submitted?: boolean
+          rebuttal_locked?: boolean
         }
       }
     }
@@ -552,6 +593,7 @@ export type Role                 = Database['public']['Tables']['roles']['Row']
 export type SiteSetting          = Database['public']['Tables']['site_settings']['Row']
 export type DashboardUser        = Database['public']['Tables']['dashboard_users']['Row']
 export type AgentScreeningResult = Database['public']['Tables']['agent_screening_results']['Row']
+export type ScreeningReport      = Database['public']['Tables']['screening_reports']['Row']
 
 export interface CommunityProject {
   id:          string
