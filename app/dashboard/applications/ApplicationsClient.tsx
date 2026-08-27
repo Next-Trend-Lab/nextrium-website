@@ -8,7 +8,6 @@ import DashboardSearchBox from '@/components/dashboard/DashboardSearchBox'
 import { logActivityAction } from '@/app/actions/activityLog'
 import {
   deleteApplication,
-  screenCandidateAction,
   dispatchEmailsAction,
   startBulkScreenAction,
   getBulkScreenJobStatus,
@@ -97,7 +96,6 @@ export default function ApplicationsClient({
 
   // AI Screening state
   const [screeningResults, setScreeningResults] = useState<Record<string, AgentScreeningResult>>(initialScreeningResults)
-  const [screeningId,      setScreeningId]      = useState<string | null>(null)
   const [batchScreening,   setBatchScreening]   = useState(false)
   const [batchProgress,    setBatchProgress]    = useState<{ current: number; total: number } | null>(null)
   const [batchJobId,       setBatchJobId]       = useState<string | null>(null)
@@ -108,13 +106,12 @@ export default function ApplicationsClient({
   const [trackDropdownOpen,  setTrackDropdownOpen]  = useState(false)
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false)
   const listScrollRef = useRef<HTMLDivElement>(null)
-  const [screeningError,   setScreeningError]   = useState<string | null>(null)
   const [copiedQuestion,   setCopiedQuestion]   = useState<number | null>(null)
   const [showQuestions,    setShowQuestions]    = useState(false)
   const [screeningStep,    setScreeningStep]    = useState(0)
 
   useEffect(() => {
-    if (screeningId === null && !batchScreening) {
+    if (!batchScreening) {
       setScreeningStep(0)
       return
     }
@@ -122,7 +119,7 @@ export default function ApplicationsClient({
       setScreeningStep((prev) => (prev + 1) % SCREENING_STEPS.length)
     }, 2600)
     return () => clearInterval(interval)
-  }, [screeningId, batchScreening])
+  }, [batchScreening])
 
   const [bulkEmailSending, setBulkEmailSending] = useState(false)
   const [bulkEmailResult,  setBulkEmailResult]  = useState<{ sentCount: number; skippedCount: number; failedCount: number } | null>(null)
@@ -194,30 +191,19 @@ export default function ApplicationsClient({
     setEmailAttachFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  async function handleScreenCandidate(appId: string, force: boolean = false) {
-    setScreeningId(appId)
-    setScreeningError(null)
-    try {
-      const res = await screenCandidateAction(appId, force)
-      if (res.error) {
-        setScreeningError(res.error)
-      } else if (res.screeningRecord) {
-        setScreeningResults((prev) => ({ ...prev, [appId]: res.screeningRecord! }))
-        if (res.statusUpdated) {
-          const targetStatus = res.statusUpdated as Application['status']
-          setApplications((prev) =>
-            prev.map((a) => (a.id === appId ? { ...a, status: targetStatus } : a))
-          )
-          if (selected?.id === appId) {
-            setSelected((prev) => (prev ? { ...prev, status: targetStatus } : null))
-          }
-        }
-      }
-    } catch (err: any) {
-      setScreeningError(err.message || 'Screening failed')
-    } finally {
-      setScreeningId(null)
-    }
+  // Single-candidate screening (Run Screening / Rescan) goes through the
+  // same durable job+polling system as bulk screening — reusing the exact
+  // infrastructure that already handles the reality that a full dual-model,
+  // dual-layer consensus screen can legitimately take well over a minute.
+  // The previous synchronous single HTTP call had a 55s client timeout and
+  // a 60s Vercel function ceiling, both shorter than real-world provider
+  // latency; the client would give up while the engine kept running the
+  // screening server-side, and a retry would then race a second, wasted
+  // run against the same candidate. Routing through the job system removes
+  // both timeouts entirely — the HTTP call to start it returns immediately,
+  // and polling has no realistic duration limit.
+  async function handleScreenCandidate(appId: string) {
+    await runBulkScreenJob([appId])
   }
 
   function applyBulkOutcomesToState(outcomes: BulkScreenOutcome[], freshRecords: Record<string, AgentScreeningResult>) {
@@ -565,7 +551,6 @@ export default function ApplicationsClient({
     setEmailOpen(false)
     setEmailResult(null)
     setEmailAttachFiles([])
-    setScreeningError(null)
     setPerCandidateEmailResult(null)
   }
 
@@ -754,7 +739,7 @@ export default function ApplicationsClient({
                   <button
                     type="button"
                     onClick={handleBatchScreen}
-                    disabled={batchScreening || screeningId !== null}
+                    disabled={batchScreening}
                     className="ai-btn ai-btn-primary"
                   >
                     {batchScreening ? 'Screening in progress...' : `⚡ Auto-Screen All (${unscannedCount})`}
@@ -1123,18 +1108,18 @@ export default function ApplicationsClient({
                       {selectedScreening && (
                         <button
                           type="button"
-                          onClick={() => handleScreenCandidate(selected.id, true)}
-                          disabled={screeningId === selected.id || batchScreening}
+                          onClick={() => handleScreenCandidate(selected.id)}
+                          disabled={batchScreening}
                           className="rescan-btn"
                         >
-                          {screeningId === selected.id ? 'Rescanning...' : '🔄 Rescan'}
+                          {isCurrentlyBatchScreening ? 'Rescanning...' : '🔄 Rescan'}
                         </button>
                       )}
                     </div>
 
-                    {screeningError && (
+                    {batchError && (
                       <div style={{ padding: '8px 12px', background: 'rgba(232,69,69,0.1)', border: '1px solid rgba(232,69,69,0.3)', color: 'var(--error)', fontSize: '11px' }}>
-                        {screeningError}
+                        {batchError}
                       </div>
                     )}
 
@@ -1147,7 +1132,7 @@ export default function ApplicationsClient({
                           Position {batchQueuePosition} of {batchTargetIds.length - batchCompletedCount} remaining in this batch
                         </div>
                       </div>
-                    ) : screeningId === selected.id || isCurrentlyBatchScreening ? (
+                    ) : isCurrentlyBatchScreening ? (
                       <div style={{ padding: '24px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <div style={{ fontSize: '13px', color: '#22c17a', fontWeight: 600 }}>
                           Evaluating candidate...
@@ -1516,7 +1501,7 @@ export default function ApplicationsClient({
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleScreenCandidate(selected.id, false)}
+                          onClick={() => handleScreenCandidate(selected.id)}
                           disabled={batchScreening}
                           className="ai-btn ai-btn-primary"
                         >
