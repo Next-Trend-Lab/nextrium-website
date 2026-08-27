@@ -1,7 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { getTeamActivityLogs, type TeamActivityLog } from './actions'
+import { useState, useEffect, Fragment } from 'react'
+import {
+  getTeamActivityLogs,
+  getAgentRunTrace,
+  type TeamActivityLog,
+  type AgentRunSummary,
+  type AgentRunLogLine,
+} from './actions'
 import { useDashboardSearch } from '@/lib/dashboard/useDashboardSearch'
 import DashboardSearchBox from '@/components/dashboard/DashboardSearchBox'
 
@@ -27,10 +33,24 @@ const ACTION_COLORS: Record<string, string> = {
   bulk_screen_started: 'var(--orange)',
 }
 
+const LEVEL_COLORS: Record<string, string> = {
+  info: 'var(--grey-mid)',
+  warn: 'var(--gold)',
+  error: 'var(--error)',
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('en-GB', {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
   })
+}
+
+function formatDuration(startIso: string, endIso: string) {
+  const ms = new Date(endIso).getTime() - new Date(startIso).getTime()
+  if (ms < 1000) return '<1s'
+  const s = Math.round(ms / 1000)
+  if (s < 60) return `${s}s`
+  return `${Math.floor(s / 60)}m ${s % 60}s`
 }
 
 function summarizeDetails(log: TeamActivityLog): string {
@@ -52,22 +72,75 @@ function summarizeDetails(log: TeamActivityLog): string {
   }
 }
 
+function RunTrace({ runId, onClose }: { runId: string; onClose: () => void }) {
+  const [lines, setLines] = useState<AgentRunLogLine[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  async function load() {
+    setLoading(true)
+    setError(null)
+    const res = await getAgentRunTrace(runId)
+    if (res.error) setError(res.error)
+    else setLines(res.lines)
+    setLoading(false)
+  }
+
+  useEffect(() => { load() }, [runId])
+
+  return (
+    <div className="run-trace">
+      <div className="run-trace-header">
+        <span>Run trace — {runId.slice(0, 8)}</span>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button type="button" className="run-trace-refresh" onClick={load} disabled={loading}>
+            {loading ? 'Loading...' : '↻ Refresh'}
+          </button>
+          <button type="button" className="run-trace-close" onClick={onClose}>✕ Close</button>
+        </div>
+      </div>
+      <div className="run-trace-body">
+        {error && <div className="logs-error">Failed to load trace: {error}</div>}
+        {!error && lines?.length === 0 && <div className="logs-empty">No log lines recorded for this run.</div>}
+        {lines?.map((line) => (
+          <div key={line.id} className="run-trace-line">
+            <span className="run-trace-time">{new Date(line.created_at).toLocaleTimeString('en-GB')}</span>
+            <span className="run-trace-level" style={{ color: LEVEL_COLORS[line.level] }}>[{line.level.toUpperCase()}]</span>
+            <span className="run-trace-step">{line.step}</span>
+            <span className="run-trace-message">{line.message}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function LogsClient({
   initialLogs,
   initialError,
+  initialRuns,
+  initialRunsError,
 }: {
   initialLogs: TeamActivityLog[]
   initialError: string | null
+  initialRuns: AgentRunSummary[]
+  initialRunsError: string | null
 }) {
   const [activeTab, setActiveTab] = useState<'team' | 'agent'>('team')
   const [logs, setLogs]     = useState(initialLogs)
   const [error, setError]   = useState(initialError)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(initialLogs.length >= 50)
+  const [expandedRunId, setExpandedRunId] = useState<string | null>(null)
 
   const { query, setQuery, results } = useDashboardSearch(
     logs,
     (log) => [log.actor_email, ACTION_LABELS[log.action] ?? log.action, log.target_id, log.action]
+  )
+
+  const { query: runQuery, setQuery: setRunQuery, results: runResults } = useDashboardSearch(
+    initialRuns,
+    (run) => [run.candidateName, run.applicationId, run.runId]
   )
 
   async function handleLoadMore() {
@@ -98,6 +171,7 @@ export default function LogsClient({
         .logs-table th { text-align: left; padding: 10px 16px; font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--grey-mid); border-bottom: 1px solid rgba(255,255,255,0.06); white-space: nowrap; }
         .logs-table td { padding: 11px 16px; font-size: 12.5px; color: var(--off-white); border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
         .logs-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .logs-table tr.clickable { cursor: pointer; }
         .logs-table tr:last-child td { border-bottom: none; }
         .logs-action-badge { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
         .logs-empty { padding: 48px 24px; text-align: center; font-size: 13px; color: var(--grey-mid); }
@@ -105,9 +179,22 @@ export default function LogsClient({
         .logs-load-more:hover:not(:disabled) { color: var(--orange); }
         .logs-load-more:disabled { opacity: 0.5; cursor: not-allowed; }
         .logs-error { padding: 14px 16px; font-size: 12.5px; color: var(--error); background: rgba(232,69,69,0.08); border-bottom: 1px solid rgba(232,69,69,0.2); }
-        .logs-coming-soon { padding: 64px 32px; text-align: center; }
-        .logs-coming-soon-title { font-family: var(--font-exo2); font-weight: 700; font-size: 18px; color: var(--white); margin-bottom: 8px; }
-        .logs-coming-soon-desc { font-size: 13px; color: var(--grey-mid); max-width: 480px; margin: 0 auto; line-height: 1.6; }
+
+        .run-status-badge { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; }
+        .run-status-ok { background: rgba(34,193,122,0.1); color: var(--success); border: 1px solid rgba(34,193,122,0.2); }
+        .run-status-warn { background: rgba(212,168,67,0.1); color: var(--gold); border: 1px solid rgba(212,168,67,0.2); }
+        .run-status-error { background: rgba(232,69,69,0.1); color: var(--error); border: 1px solid rgba(232,69,69,0.2); }
+
+        .run-trace { border-top: 1px solid rgba(255,255,255,0.08); background: #050d18; }
+        .run-trace-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--orange); border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .run-trace-refresh, .run-trace-close { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: none; color: var(--grey-mid); padding: 4px 10px; transition: all 0.15s ease; }
+        .run-trace-refresh:hover:not(:disabled), .run-trace-close:hover { color: var(--white); border-color: rgba(255,255,255,0.3); }
+        .run-trace-body { max-height: 420px; overflow-y: auto; padding: 12px 16px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.9; }
+        .run-trace-line { display: flex; gap: 10px; white-space: pre-wrap; word-break: break-word; }
+        .run-trace-time { color: var(--grey-dark-2, #4a5b70); flex-shrink: 0; }
+        .run-trace-level { flex-shrink: 0; }
+        .run-trace-step { color: var(--slate); flex-shrink: 0; }
+        .run-trace-message { color: var(--off-white); }
       `}</style>
 
       <div className="logs-tabs">
@@ -176,15 +263,66 @@ export default function LogsClient({
         </div>
       ) : (
         <div className="logs-panel">
-          <div className="logs-coming-soon">
-            <div className="logs-coming-soon-title">AI Agent Logs — coming soon</div>
-            <div className="logs-coming-soon-desc">
-              Step-by-step processing traces for every screening run (model calls, retries,
-              consensus reasoning) will appear here once the Agents Engine's logging
-              integration ships. This requires changes to the Agents Engine itself, which
-              are proposed separately before implementation.
-            </div>
+          <div className="logs-search-row">
+            <DashboardSearchBox
+              value={runQuery}
+              onChange={setRunQuery}
+              placeholder="Search by candidate or application..."
+              resultCount={runResults.length}
+            />
           </div>
+
+          {initialRunsError && <div className="logs-error">Failed to load agent runs: {initialRunsError}</div>}
+
+          {runResults.length === 0 ? (
+            <div className="logs-empty">
+              No screening runs logged yet. Runs appear here once a candidate is screened
+              (single or bulk) on an Agents Engine build with run logging enabled.
+            </div>
+          ) : (
+            <table className="logs-table">
+              <thead>
+                <tr>
+                  <th>Started</th>
+                  <th>Candidate</th>
+                  <th>Duration</th>
+                  <th>Lines</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {runResults.map((run) => (
+                  <Fragment key={run.runId}>
+                    <tr
+                      className="clickable"
+                      onClick={() => setExpandedRunId(expandedRunId === run.runId ? null : run.runId)}
+                    >
+                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--grey-mid)', whiteSpace: 'nowrap' }}>
+                        {formatDate(run.startedAt)}
+                      </td>
+                      <td>{run.candidateName ?? 'Unknown candidate'}</td>
+                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--grey-mid)' }}>
+                        {formatDuration(run.startedAt, run.finishedAt)}
+                      </td>
+                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--grey-mid)' }}>{run.lineCount}</td>
+                      <td>
+                        <span className={`run-status-badge ${run.hasError ? 'run-status-error' : run.hasWarn ? 'run-status-warn' : 'run-status-ok'}`}>
+                          {run.hasError ? 'Error' : run.hasWarn ? 'Warning' : 'OK'}
+                        </span>
+                      </td>
+                    </tr>
+                    {expandedRunId === run.runId && (
+                      <tr>
+                        <td colSpan={5} style={{ padding: 0 }}>
+                          <RunTrace runId={run.runId} onClose={() => setExpandedRunId(null)} />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
     </>
