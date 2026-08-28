@@ -220,14 +220,28 @@ export default function ApplicationsClient({
 
   async function pollBulkScreenJob(jobId: string) {
     const mergedApplicationIds = new Set<string>()
+    // A transient gateway blip on a single 3s status check (e.g. a stray 504)
+    // used to be treated as fatal, permanently abandoning a job that Render
+    // was still working through fine in the background. Tolerate a run of
+    // failures before giving up — Render is the source of truth and doesn't
+    // stop on its own, so the client should keep trying to reconnect rather
+    // than assume one bad response means the job is dead.
+    const MAX_CONSECUTIVE_POLL_FAILURES = 5
+    let consecutiveFailures = 0
 
     while (true) {
       const { job, error } = await getBulkScreenJobStatus(jobId)
 
       if (error || !job) {
-        setBatchError(error || 'Lost connection to the bulk screening job.')
-        break
+        consecutiveFailures += 1
+        if (consecutiveFailures >= MAX_CONSECUTIVE_POLL_FAILURES) {
+          setBatchError(error || 'Lost connection to the bulk screening job.')
+          break
+        }
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+        continue
       }
+      consecutiveFailures = 0
 
       setBatchProgress({ current: job.succeeded + job.failed, total: job.total })
       if (Array.isArray(job.application_ids) && job.application_ids.length > 0) {
