@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Application, AgentScreeningResult } from '@/lib/types/database'
 import { useDashboardSearch } from '@/lib/dashboard/useDashboardSearch'
 import DashboardSearchBox from '@/components/dashboard/DashboardSearchBox'
+import { useDashboard } from '@/components/dashboard/DashboardContext'
 import { logActivityAction } from '@/app/actions/activityLog'
+import RebuttalPanel from './RebuttalPanel'
 import {
   deleteApplication,
   dispatchEmailsAction,
@@ -79,6 +82,12 @@ export default function ApplicationsClient({
   initialScreeningResults = {},
   rebuttalStatuses = {},
 }: ApplicationsClientProps) {
+  const { openCopilot } = useDashboard()
+  // Status/rebuttal filtering is driven by the sidebar sub-navigation via
+  // ?status=, so it's real navigation (bookmarkable, back-button aware)
+  // rather than in-page tab state.
+  const searchParams = useSearchParams()
+  const statusTab = (searchParams.get('status') ?? 'all') as 'all' | Application['status'] | 'rebuttal'
   const [applications, setApplications] = useState(initial)
   const [selected,     setSelected]     = useState<Application | null>(null)
   const [updating,     setUpdating]     = useState(false)
@@ -505,47 +514,58 @@ export default function ApplicationsClient({
     (app) => [app.name, app.email, app.role_title]
   )
 
-  const tableRows = searchedApplications
-    .filter((app) => {
-      const screening = screeningResults[app.id]
-      if (minScoreFilter.trim()) {
-        const min = Number(minScoreFilter)
-        if (!screening || screening.composite_score < min) return false
-      }
-      if (trackFilter.length > 0) {
-        if (!screening || !trackFilter.includes(screening.evaluation_track)) return false
-      }
-      if (recFilter.length > 0) {
-        if (!recFilter.includes(app.status)) return false
-      }
-      return true
-    })
-    .sort((a, b) => {
-      const sa = screeningResults[a.id]
-      const sb = screeningResults[b.id]
-      let av: string | number = ''
-      let bv: string | number = ''
-      switch (sortField) {
-        case 'name':             av = a.name; bv = b.name; break
-        case 'role':             av = a.role_title ?? ''; bv = b.role_title ?? ''; break
-        case 'evaluation_track': av = sa?.evaluation_track ?? ''; bv = sb?.evaluation_track ?? ''; break
-        case 'composite_score':  av = sa?.composite_score ?? -1; bv = sb?.composite_score ?? -1; break
-        case 'consensus_tier':   av = sa?.consensus_tier ?? ''; bv = sb?.consensus_tier ?? ''; break
-        case 'recommendation':   av = sa?.recommendation ?? ''; bv = sb?.recommendation ?? ''; break
-        case 'rebuttal':         av = rebuttalStatuses[a.id]?.rebuttalSubmitted ? 1 : 0; bv = rebuttalStatuses[b.id]?.rebuttalSubmitted ? 1 : 0; break
-        case 'screened_at':      av = sa?.screened_at ?? ''; bv = sb?.screened_at ?? ''; break
-      }
-      if (av < bv) return sortDir === 'asc' ? -1 : 1
-      if (av > bv) return sortDir === 'asc' ? 1 : -1
-      return 0
-    })
+  // Filtering only — deliberately does NOT sort. List view renders this
+  // directly so newly submitted (unscreened) applications stay in the
+  // server's natural newest-first order instead of being pushed to the
+  // bottom by a screened_at sort they don't have a value for yet.
+  const filteredApplications = searchedApplications.filter((app) => {
+    if (statusTab === 'rebuttal') {
+      if (!rebuttalStatuses[app.id]?.rebuttalSubmitted) return false
+    } else if (statusTab !== 'all') {
+      if (app.status !== statusTab) return false
+    }
+    const screening = screeningResults[app.id]
+    if (minScoreFilter.trim()) {
+      const min = Number(minScoreFilter)
+      if (!screening || screening.composite_score < min) return false
+    }
+    if (trackFilter.length > 0) {
+      if (!screening || !trackFilter.includes(screening.evaluation_track)) return false
+    }
+    if (recFilter.length > 0) {
+      if (!recFilter.includes(app.status)) return false
+    }
+    return true
+  })
+
+  // Table view only — explicit column-header sorting on top of the same
+  // filtered set.
+  const tableRows = [...filteredApplications].sort((a, b) => {
+    const sa = screeningResults[a.id]
+    const sb = screeningResults[b.id]
+    let av: string | number = ''
+    let bv: string | number = ''
+    switch (sortField) {
+      case 'name':             av = a.name; bv = b.name; break
+      case 'role':             av = a.role_title ?? ''; bv = b.role_title ?? ''; break
+      case 'evaluation_track': av = sa?.evaluation_track ?? ''; bv = sb?.evaluation_track ?? ''; break
+      case 'composite_score':  av = sa?.composite_score ?? -1; bv = sb?.composite_score ?? -1; break
+      case 'consensus_tier':   av = sa?.consensus_tier ?? ''; bv = sb?.consensus_tier ?? ''; break
+      case 'recommendation':   av = sa?.recommendation ?? ''; bv = sb?.recommendation ?? ''; break
+      case 'rebuttal':         av = rebuttalStatuses[a.id]?.rebuttalSubmitted ? 1 : 0; bv = rebuttalStatuses[b.id]?.rebuttalSubmitted ? 1 : 0; break
+      case 'screened_at':      av = sa?.screened_at ?? ''; bv = sb?.screened_at ?? ''; break
+    }
+    if (av < bv) return sortDir === 'asc' ? -1 : 1
+    if (av > bv) return sortDir === 'asc' ? 1 : -1
+    return 0
+  })
 
   // Reset scroll position when filters/search change — otherwise newly
   // included rows can land above or below the current scroll position,
   // making a "Clear filters" click look like it did nothing.
   useEffect(() => {
     listScrollRef.current?.scrollTo({ top: 0 })
-  }, [trackFilter, recFilter, minScoreFilter, searchQuery])
+  }, [statusTab, trackFilter, recFilter, minScoreFilter, searchQuery])
 
   function toggleTrackFilter(track: string) {
     setTrackFilter((prev) => prev.includes(track) ? prev.filter((t) => t !== track) : [...prev, track])
@@ -832,7 +852,7 @@ export default function ApplicationsClient({
                 value={searchQuery}
                 onChange={setSearchQuery}
                 placeholder="Search candidates by name, email, or role..."
-                resultCount={searchedApplications.length}
+                resultCount={filteredApplications.length}
               />
             </div>
 
@@ -941,10 +961,10 @@ export default function ApplicationsClient({
             )}
 
             <div className="apps-list-scroll" ref={listScrollRef}>
-            {viewMode === 'list' && searchedApplications.length === 0 ? (
-              <div className="table-empty">No applications match your search.</div>
+            {viewMode === 'list' && filteredApplications.length === 0 ? (
+              <div className="table-empty">No applications match your filters.</div>
             ) : viewMode === 'list' ? (
-              searchedApplications.map((app) => {
+              filteredApplications.map((app) => {
                 const ss = STATUS_STYLES[app.status]
                 const screening = screeningResults[app.id]
                 const scoreConfig = screening ? getScoreColor(screening.composite_score) : null
@@ -1119,16 +1139,34 @@ export default function ApplicationsClient({
                       <div className="ai-box-title">
                         <span>⚡ AI Consensus Evaluation</span>
                       </div>
-                      {selectedScreening && (
-                        <button
-                          type="button"
-                          onClick={() => handleScreenCandidate(selected.id)}
-                          disabled={batchScreening}
-                          className="rescan-btn"
-                        >
-                          {isCurrentlyBatchScreening ? 'Rescanning...' : '🔄 Rescan'}
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {selectedScreening && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openCopilot({
+                                domainType: 'hr_screening',
+                                resourceId: selected.id,
+                                reportId: selectedReportId,
+                                candidateName: selected.name,
+                              })
+                            }
+                            className="rescan-btn"
+                          >
+                            💬 Ask Co-Pilot
+                          </button>
+                        )}
+                        {selectedScreening && (
+                          <button
+                            type="button"
+                            onClick={() => handleScreenCandidate(selected.id)}
+                            disabled={batchScreening}
+                            className="rescan-btn"
+                          >
+                            {isCurrentlyBatchScreening ? 'Rescanning...' : '🔄 Rescan'}
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {batchError && (
@@ -1210,6 +1248,21 @@ export default function ApplicationsClient({
                             ) : null}
                           </div>
                         </div>
+
+                        {selectedRebuttal?.rebuttalSubmitted && selectedReportId && selected && (
+                          <RebuttalPanel
+                            reportId={selectedReportId}
+                            applicationId={selected.id}
+                            candidateName={selected.name}
+                            onResolved={() => {
+                              getScreeningResultsForApplications([selected.id]).then((records) => {
+                                if (records[selected.id]) {
+                                  setScreeningResults((prev) => ({ ...prev, [selected.id]: records[selected.id] }))
+                                }
+                              })
+                            }}
+                          />
+                        )}
 
                         {/* Public feedback report link */}
                         {selectedReportUrl && (

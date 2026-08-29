@@ -209,6 +209,111 @@ export async function getBulkScreenJobStatus(
   return { job: res.data.job }
 }
 
+export interface RebuttalDetail {
+  id: string
+  reportId: string
+  applicationId: string | null
+  disputedDimensions: string[]
+  evidenceStatement: string
+  evidenceUrls: string[]
+  status: 'pending' | 'rescreening' | 'in_review' | 'rescreened' | 'resolved' | 'dismissed'
+  previousScore: number | null
+  newScore: number | null
+  deltaSummary: string | null
+  rescreenError: string | null
+  createdAt: string
+}
+
+export async function getRebuttalDetail(reportId: string): Promise<{ rebuttal?: RebuttalDetail; error?: string }> {
+  try {
+    const supabase = createServiceClient()
+    const { data, error } = await (supabase.from('screening_rebuttals') as any)
+      .select('*')
+      .eq('report_id', reportId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error) throw new Error(error.message)
+    if (!data) return {}
+
+    return {
+      rebuttal: {
+        id: data.id,
+        reportId: data.report_id,
+        applicationId: data.application_id ?? null,
+        disputedDimensions: data.disputed_dimensions ?? [],
+        evidenceStatement: data.evidence_statement ?? '',
+        evidenceUrls: data.evidence_urls ?? [],
+        status: data.status ?? 'pending',
+        previousScore: data.previous_score ?? null,
+        newScore: data.new_score ?? null,
+        deltaSummary: data.delta_summary ?? null,
+        rescreenError: data.rescreen_error ?? null,
+        createdAt: data.created_at,
+      },
+    }
+  } catch (err) {
+    console.error('[getRebuttalDetail] Error:', err)
+    return { error: err instanceof Error ? err.message : 'Failed to load rebuttal detail.' }
+  }
+}
+
+export async function triggerRebuttalRescreen(
+  rebuttalId: string
+): Promise<{ error?: string; status?: string; httpStatus?: number }> {
+  const res = await fetchAgentsEngine(`/api/v1/agents/copilot/rebuttals/${rebuttalId}/rescreen`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+
+  if (!res.ok) {
+    // 409 while one is already in flight isn't a failure worth alarming over —
+    // the caller should just resume polling instead of showing a hard error.
+    return { error: res.error, httpStatus: res.status }
+  }
+
+  return { status: res.data.status }
+}
+
+export interface ResolveRebuttalOutcome {
+  error?: string
+  status?: string
+  updatedScore?: number
+  applicationStatus?: string
+  emailDispatched?: boolean
+}
+
+export async function resolveRebuttalAction(
+  rebuttalId: string,
+  action: 'accept' | 'refine' | 'decline',
+  recruiterNotes?: string
+): Promise<ResolveRebuttalOutcome> {
+  const res = await fetchAgentsEngine(`/api/v1/agents/copilot/rebuttals/${rebuttalId}/resolve`, {
+    method: 'POST',
+    body: JSON.stringify({ action, recruiterNotes, dispatchEmail: true }),
+  })
+
+  if (!res.ok) {
+    return { error: res.error }
+  }
+
+  revalidatePath('/dashboard/applications')
+  logActivity({
+    action: `rebuttal_${action}`,
+    targetType: 'rebuttal',
+    targetId: rebuttalId,
+    details: { recruiterNotes, updatedScore: res.data.result?.updatedScore },
+  }).catch(() => {})
+
+  return {
+    status: res.data.result?.status,
+    updatedScore: res.data.result?.updatedScore,
+    applicationStatus: res.data.result?.applicationStatus,
+    emailDispatched: res.data.result?.emailDispatched,
+  }
+}
+
 export async function getScreeningResultsForApplications(
   applicationIds: string[]
 ): Promise<Record<string, AgentScreeningResult>> {
