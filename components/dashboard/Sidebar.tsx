@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import NTMark from '@/components/shared/NTMark'
 import { useDashboard } from './DashboardContext'
 import type { DashboardRole } from '@/lib/dashboard/getRole'
@@ -59,6 +59,14 @@ export default function Sidebar({ role }: { role: DashboardRole }) {
   const searchParams = useSearchParams()
   const { sidebarOpen, closeSidebar } = useDashboard()
   const activeStatus = searchParams.get('status') ?? 'all'
+  const isApplicationsActive = pathname === '/dashboard/applications' || pathname.startsWith('/dashboard/applications/')
+  const [subNavOpen, setSubNavOpen] = useState(isApplicationsActive)
+
+  // Auto-expand when navigating onto Applications; leave the user's manual
+  // collapse alone otherwise.
+  useEffect(() => {
+    if (isApplicationsActive) setSubNavOpen(true)
+  }, [isApplicationsActive])
 
   const navGroups = ALL_NAV_GROUPS
     .map((group) => ({
@@ -76,19 +84,31 @@ export default function Sidebar({ role }: { role: DashboardRole }) {
       <style>{`
         .sidebar-overlay { display: none; position: fixed; inset: 0; z-index: 39; background: rgba(7,22,40,0.7); backdrop-filter: blur(2px); }
         .sidebar-overlay.open { display: block; }
-        .sidebar { width: 240px; flex-shrink: 0; background: var(--navy); border-right: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; height: 100vh; position: sticky; top: 0; overflow-y: auto; z-index: 40; transition: transform 0.25s ease; }
-        .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .sidebar { width: 240px; flex-shrink: 0; background: var(--navy); border-right: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; height: 100vh; position: sticky; top: 0; z-index: 40; transition: transform 0.25s ease; }
+        .sidebar-logo { flex-shrink: 0; padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 10px; text-decoration: none; }
         .sidebar-wordmark { font-family: var(--font-exo2, 'Exo 2', sans-serif); font-weight: 900; font-size: 18px; letter-spacing: -0.3px; color: var(--off-white); }
         .sidebar-wordmark span { color: var(--orange); }
         .sidebar-badge { font-family: var(--font-mono, 'Space Mono', monospace); font-size: 7px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--orange); background: rgba(219,103,39,0.1); border: 1px solid rgba(219,103,39,0.2); padding: 2px 6px; margin-left: auto; }
-        .sidebar-nav { flex: 1; padding: 16px 0; }
+        /* Nav scrolls on its own; logo and footer stay pinned in place
+           regardless of how long the nav (with sub-navs open) gets. */
+        .sidebar-nav { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 0; }
         .sidebar-group { margin-bottom: 8px; }
         .sidebar-group-label { font-family: var(--font-mono, 'Space Mono', monospace); font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--grey-dark); padding: 8px 20px 4px; }
-        .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; text-decoration: none; font-size: 13px; color: var(--grey-mid); transition: all 0.15s ease; border-left: 2px solid transparent; margin: 1px 0; }
-        .sidebar-item:hover { color: var(--white); background: rgba(255,255,255,0.04); }
-        .sidebar-item.active { color: var(--white); background: rgba(219,103,39,0.08); border-left-color: var(--orange); }
+        .sidebar-item-row { display: flex; align-items: center; border-left: 2px solid transparent; margin: 1px 0; transition: background 0.15s ease, border-color 0.15s ease; }
+        .sidebar-item-row:hover { background: rgba(255,255,255,0.04); }
+        .sidebar-item-row.active { background: rgba(219,103,39,0.08); border-left-color: var(--orange); }
+        .sidebar-item { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 9px 20px; text-decoration: none; font-size: 13px; color: var(--grey-mid); transition: color 0.15s ease; }
+        .sidebar-item-row:hover .sidebar-item, .sidebar-item-row.active .sidebar-item { color: var(--white); }
         .sidebar-icon { font-size: 10px; color: inherit; opacity: 0.6; flex-shrink: 0; }
-        .sidebar-item.active .sidebar-icon { opacity: 1; color: var(--orange); }
+        .sidebar-item-row.active .sidebar-icon { opacity: 1; color: var(--orange); }
+        .sidebar-subnav-toggle {
+          background: none; border: none; color: var(--grey-mid); cursor: pointer;
+          font-size: 9px; padding: 8px 16px 8px 4px; flex-shrink: 0;
+          transition: transform 0.2s ease, color 0.15s ease;
+        }
+        .sidebar-subnav-toggle:hover { color: var(--white); }
+        .sidebar-subnav-toggle.open { transform: rotate(180deg); }
+        .sidebar-item-row.active .sidebar-subnav-toggle { color: var(--orange); }
         .sidebar-subnav { display: flex; flex-direction: column; padding: 2px 0 6px; }
         .sidebar-subitem {
           padding: 6px 20px 6px 42px; text-decoration: none; font-size: 12px;
@@ -96,7 +116,7 @@ export default function Sidebar({ role }: { role: DashboardRole }) {
         }
         .sidebar-subitem:hover { color: var(--white); background: rgba(255,255,255,0.03); }
         .sidebar-subitem.active { color: var(--orange); border-left-color: var(--orange); background: rgba(219,103,39,0.06); }
-        .sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .sidebar-footer { flex-shrink: 0; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.06); }
         .sidebar-footer-link { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--grey-mid); text-decoration: none; padding: 8px 0; transition: color 0.15s ease; }
         .sidebar-footer-link:hover { color: var(--white); }
         .sidebar-footer-link + .sidebar-footer-link { border-top: 1px solid rgba(255,255,255,0.04); }
@@ -126,11 +146,24 @@ export default function Sidebar({ role }: { role: DashboardRole }) {
                 const isApplications = item.href === '/dashboard/applications'
                 return (
                   <div key={item.href}>
-                    <Link href={item.href} className={`sidebar-item ${isActive ? 'active' : ''}`}>
-                      <span className="sidebar-icon">{item.icon}</span>
-                      {item.label}
-                    </Link>
-                    {isApplications && isActive && (
+                    <div className={`sidebar-item-row ${isActive ? 'active' : ''}`}>
+                      <Link href={item.href} className={`sidebar-item ${isActive ? 'active' : ''}`}>
+                        <span className="sidebar-icon">{item.icon}</span>
+                        {item.label}
+                      </Link>
+                      {isApplications && (
+                        <button
+                          type="button"
+                          className={`sidebar-subnav-toggle ${subNavOpen ? 'open' : ''}`}
+                          onClick={() => setSubNavOpen((v) => !v)}
+                          aria-label={subNavOpen ? 'Collapse Applications sub-navigation' : 'Expand Applications sub-navigation'}
+                          aria-expanded={subNavOpen}
+                        >
+                          ▾
+                        </button>
+                      )}
+                    </div>
+                    {isApplications && subNavOpen && (
                       <div className="sidebar-subnav">
                         {APPLICATIONS_SUB_ITEMS.map((sub) => {
                           const subActive = activeStatus === sub.status
