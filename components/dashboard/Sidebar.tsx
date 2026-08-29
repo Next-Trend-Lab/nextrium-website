@@ -1,11 +1,24 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 import NTMark from '@/components/shared/NTMark'
 import { useDashboard } from './DashboardContext'
 import type { DashboardRole } from '@/lib/dashboard/getRole'
+
+// Sub-navigation shown under "Applications" while on that page — real
+// links (?status=...) rather than in-page tab state, so a status view is
+// bookmarkable and reachable straight from the sidebar without scrolling.
+const APPLICATIONS_SUB_ITEMS = [
+  { label: 'All',         status: 'all' },
+  { label: 'Pending',     status: 'pending' },
+  { label: 'Reviewed',    status: 'reviewed' },
+  { label: 'Shortlisted', status: 'shortlisted' },
+  { label: 'Accepted',    status: 'accepted' },
+  { label: 'Rejected',    status: 'rejected' },
+  { label: 'Rebuttals',   status: 'rebuttal' },
+]
 
 const ALL_NAV_GROUPS = [
   {
@@ -43,7 +56,9 @@ const ALL_NAV_GROUPS = [
 
 export default function Sidebar({ role }: { role: DashboardRole }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { sidebarOpen, closeSidebar } = useDashboard()
+  const activeStatus = searchParams.get('status') ?? 'all'
 
   const navGroups = ALL_NAV_GROUPS
     .map((group) => ({
@@ -74,6 +89,13 @@ export default function Sidebar({ role }: { role: DashboardRole }) {
         .sidebar-item.active { color: var(--white); background: rgba(219,103,39,0.08); border-left-color: var(--orange); }
         .sidebar-icon { font-size: 10px; color: inherit; opacity: 0.6; flex-shrink: 0; }
         .sidebar-item.active .sidebar-icon { opacity: 1; color: var(--orange); }
+        .sidebar-subnav { display: flex; flex-direction: column; padding: 2px 0 6px; }
+        .sidebar-subitem {
+          padding: 6px 20px 6px 42px; text-decoration: none; font-size: 12px;
+          color: var(--grey-mid); transition: all 0.15s ease; border-left: 2px solid transparent;
+        }
+        .sidebar-subitem:hover { color: var(--white); background: rgba(255,255,255,0.03); }
+        .sidebar-subitem.active { color: var(--orange); border-left-color: var(--orange); background: rgba(219,103,39,0.06); }
         .sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.06); }
         .sidebar-footer-link { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--grey-mid); text-decoration: none; padding: 8px 0; transition: color 0.15s ease; }
         .sidebar-footer-link:hover { color: var(--white); }
@@ -101,11 +123,27 @@ export default function Sidebar({ role }: { role: DashboardRole }) {
                 const isActive = item.href === '/dashboard'
                   ? pathname === '/dashboard'
                   : pathname === item.href || pathname.startsWith(item.href + '/')
+                const isApplications = item.href === '/dashboard/applications'
                 return (
-                  <Link key={item.href} href={item.href} className={`sidebar-item ${isActive ? 'active' : ''}`}>
-                    <span className="sidebar-icon">{item.icon}</span>
-                    {item.label}
-                  </Link>
+                  <div key={item.href}>
+                    <Link href={item.href} className={`sidebar-item ${isActive ? 'active' : ''}`}>
+                      <span className="sidebar-icon">{item.icon}</span>
+                      {item.label}
+                    </Link>
+                    {isApplications && isActive && (
+                      <div className="sidebar-subnav">
+                        {APPLICATIONS_SUB_ITEMS.map((sub) => {
+                          const subActive = activeStatus === sub.status
+                          const href = sub.status === 'all' ? item.href : `${item.href}?status=${sub.status}`
+                          return (
+                            <Link key={sub.status} href={href} className={`sidebar-subitem ${subActive ? 'active' : ''}`}>
+                              {sub.label}
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
                 )
               })}
             </div>
