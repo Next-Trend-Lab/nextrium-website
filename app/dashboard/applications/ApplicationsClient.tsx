@@ -5,7 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import type { Application, AgentScreeningResult } from '@/lib/types/database'
 import { useDashboardSearch } from '@/lib/dashboard/useDashboardSearch'
 import DashboardSearchBox from '@/components/dashboard/DashboardSearchBox'
+import { useDashboard } from '@/components/dashboard/DashboardContext'
 import { logActivityAction } from '@/app/actions/activityLog'
+import RebuttalPanel from './RebuttalPanel'
 import {
   deleteApplication,
   dispatchEmailsAction,
@@ -79,6 +81,7 @@ export default function ApplicationsClient({
   initialScreeningResults = {},
   rebuttalStatuses = {},
 }: ApplicationsClientProps) {
+  const { openCopilot } = useDashboard()
   const [applications, setApplications] = useState(initial)
   const [selected,     setSelected]     = useState<Application | null>(null)
   const [updating,     setUpdating]     = useState(false)
@@ -1119,16 +1122,34 @@ export default function ApplicationsClient({
                       <div className="ai-box-title">
                         <span>⚡ AI Consensus Evaluation</span>
                       </div>
-                      {selectedScreening && (
-                        <button
-                          type="button"
-                          onClick={() => handleScreenCandidate(selected.id)}
-                          disabled={batchScreening}
-                          className="rescan-btn"
-                        >
-                          {isCurrentlyBatchScreening ? 'Rescanning...' : '🔄 Rescan'}
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {selectedScreening && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openCopilot({
+                                domainType: 'hr_screening',
+                                resourceId: selected.id,
+                                reportId: selectedReportId,
+                                candidateName: selected.name,
+                              })
+                            }
+                            className="rescan-btn"
+                          >
+                            💬 Ask Co-Pilot
+                          </button>
+                        )}
+                        {selectedScreening && (
+                          <button
+                            type="button"
+                            onClick={() => handleScreenCandidate(selected.id)}
+                            disabled={batchScreening}
+                            className="rescan-btn"
+                          >
+                            {isCurrentlyBatchScreening ? 'Rescanning...' : '🔄 Rescan'}
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {batchError && (
@@ -1210,6 +1231,21 @@ export default function ApplicationsClient({
                             ) : null}
                           </div>
                         </div>
+
+                        {selectedRebuttal?.rebuttalSubmitted && selectedReportId && selected && (
+                          <RebuttalPanel
+                            reportId={selectedReportId}
+                            applicationId={selected.id}
+                            candidateName={selected.name}
+                            onResolved={() => {
+                              getScreeningResultsForApplications([selected.id]).then((records) => {
+                                if (records[selected.id]) {
+                                  setScreeningResults((prev) => ({ ...prev, [selected.id]: records[selected.id] }))
+                                }
+                              })
+                            }}
+                          />
+                        )}
 
                         {/* Public feedback report link */}
                         {selectedReportUrl && (

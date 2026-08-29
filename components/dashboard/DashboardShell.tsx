@@ -1,6 +1,7 @@
 'use client'
 
 import Sidebar from './Sidebar'
+import CopilotDrawer from './CopilotDrawer'
 import { DashboardProvider } from './DashboardContext'
 import type { DashboardRole } from '@/lib/dashboard/getRole'
 
@@ -16,6 +17,7 @@ function ShellInner({ children, role }: { children: React.ReactNode; role: Dashb
       <div className="dash-shell">
         <Sidebar role={role} />
         <div className="dash-main">{children}</div>
+        <CopilotDrawer />
       </div>
     </>
   )
