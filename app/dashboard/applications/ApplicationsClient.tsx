@@ -92,6 +92,7 @@ export default function ApplicationsClient({
   const [viewMode,        setViewMode]        = useState<'list' | 'table'>('list')
   const [sortField,       setSortField]       = useState<SortField>('screened_at')
   const [sortDir,         setSortDir]         = useState<SortDir>('desc')
+  const [statusTab,       setStatusTab]       = useState<'all' | Application['status'] | 'rebuttal'>('all')
   const [minScoreFilter,  setMinScoreFilter]  = useState<string>('')
   const [trackFilter,     setTrackFilter]     = useState<string[]>([])
   const [recFilter,       setRecFilter]       = useState<Application['status'][]>([])
@@ -461,6 +462,7 @@ export default function ApplicationsClient({
     return acc
   }, {} as Record<Application['status'], number>)
 
+  const rebuttalCount = applications.filter((a) => rebuttalStatuses[a.id]?.rebuttalSubmitted).length
   const unscannedCount = applications.filter((a) => !screeningResults[a.id]).length
   const pendingEmailCount = applications.filter((a) => screeningResults[a.id] && !screeningResults[a.id].email_sent).length
   const selectedScreening = selected ? screeningResults[selected.id] : null
@@ -510,6 +512,11 @@ export default function ApplicationsClient({
 
   const tableRows = searchedApplications
     .filter((app) => {
+      if (statusTab === 'rebuttal') {
+        if (!rebuttalStatuses[app.id]?.rebuttalSubmitted) return false
+      } else if (statusTab !== 'all') {
+        if (app.status !== statusTab) return false
+      }
       const screening = screeningResults[app.id]
       if (minScoreFilter.trim()) {
         const min = Number(minScoreFilter)
@@ -548,7 +555,7 @@ export default function ApplicationsClient({
   // making a "Clear filters" click look like it did nothing.
   useEffect(() => {
     listScrollRef.current?.scrollTo({ top: 0 })
-  }, [trackFilter, recFilter, minScoreFilter, searchQuery])
+  }, [statusTab, trackFilter, recFilter, minScoreFilter, searchQuery])
 
   function toggleTrackFilter(track: string) {
     setTrackFilter((prev) => prev.includes(track) ? prev.filter((t) => t !== track) : [...prev, track])
@@ -676,6 +683,19 @@ export default function ApplicationsClient({
         .artifact-val { color: var(--off-white); text-align: right; }
         .artifact-val.ok { color: #22c17a; }
         .artifact-val.bad { color: var(--error); }
+
+        .status-tab-bar { display: flex; gap: 4px; padding: 12px 16px 0; border-bottom: 1px solid rgba(255,255,255,0.06); overflow-x: auto; }
+        .status-tab {
+          display: flex; align-items: center; gap: 6px; background: none; border: none;
+          border-bottom: 2px solid transparent; padding: 8px 12px; cursor: pointer;
+          font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+          color: var(--grey-mid); white-space: nowrap; transition: color 0.15s ease, border-color 0.15s ease;
+        }
+        .status-tab:hover { color: var(--off-white); }
+        .status-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+        .status-tab.has-alert:not(.active) { color: var(--error); }
+        .status-tab-count { font-size: 9px; background: rgba(255,255,255,0.06); padding: 1px 6px; color: var(--grey-light); }
+        .status-tab.active .status-tab-count { background: rgba(219,103,39,0.15); color: var(--orange); }
 
         .report-link-box { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); }
         .report-link-url { flex: 1; font-family: var(--font-mono); font-size: 11px; color: var(--off-white); word-break: break-all; }
@@ -830,12 +850,34 @@ export default function ApplicationsClient({
               </div>
             )}
 
+            <div className="status-tab-bar">
+              {([
+                { key: 'all',         label: 'All',         count: applications.length },
+                { key: 'pending',     label: 'Pending',     count: counts.pending },
+                { key: 'reviewed',    label: 'Reviewed',    count: counts.reviewed },
+                { key: 'shortlisted', label: 'Shortlisted', count: counts.shortlisted },
+                { key: 'accepted',    label: 'Accepted',    count: counts.accepted },
+                { key: 'rejected',    label: 'Rejected',    count: counts.rejected },
+                { key: 'rebuttal',    label: 'Rebuttals',   count: rebuttalCount },
+              ] as const).map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  className={`status-tab ${statusTab === tab.key ? 'active' : ''} ${tab.key === 'rebuttal' && tab.count > 0 ? 'has-alert' : ''}`}
+                  onClick={() => setStatusTab(tab.key)}
+                >
+                  {tab.label}
+                  <span className="status-tab-count">{tab.count}</span>
+                </button>
+              ))}
+            </div>
+
             <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <DashboardSearchBox
                 value={searchQuery}
                 onChange={setSearchQuery}
                 placeholder="Search candidates by name, email, or role..."
-                resultCount={searchedApplications.length}
+                resultCount={tableRows.length}
               />
             </div>
 
@@ -944,10 +986,10 @@ export default function ApplicationsClient({
             )}
 
             <div className="apps-list-scroll" ref={listScrollRef}>
-            {viewMode === 'list' && searchedApplications.length === 0 ? (
-              <div className="table-empty">No applications match your search.</div>
+            {viewMode === 'list' && tableRows.length === 0 ? (
+              <div className="table-empty">No applications match your filters.</div>
             ) : viewMode === 'list' ? (
-              searchedApplications.map((app) => {
+              tableRows.map((app) => {
                 const ss = STATUS_STYLES[app.status]
                 const screening = screeningResults[app.id]
                 const scoreConfig = screening ? getScoreColor(screening.composite_score) : null
