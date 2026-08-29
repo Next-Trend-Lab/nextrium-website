@@ -94,7 +94,12 @@ export default function Sidebar({ role }: { role: DashboardRole }) {
         .sidebar-nav { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 0; }
         .sidebar-group { margin-bottom: 8px; }
         .sidebar-group-label { font-family: var(--font-mono, 'Space Mono', monospace); font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--grey-dark); padding: 8px 20px 4px; }
-        .sidebar-item-row { display: flex; align-items: center; border-left: 2px solid transparent; margin: 1px 0; transition: background 0.15s ease, border-color 0.15s ease; }
+        .sidebar-item-row {
+          display: flex; align-items: center; justify-content: space-between;
+          border-left: 2px solid transparent; margin: 1px 0;
+          transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .sidebar-item-row.toggle { width: 100%; background: none; border: none; border-left: 2px solid transparent; cursor: pointer; font: inherit; text-align: left; }
         .sidebar-item-row:hover { background: rgba(255,255,255,0.04); }
         .sidebar-item-row.active { background: rgba(219,103,39,0.08); border-left-color: var(--orange); }
         .sidebar-item { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 9px 20px; text-decoration: none; font-size: 13px; color: var(--grey-mid); transition: color 0.15s ease; }
@@ -102,11 +107,10 @@ export default function Sidebar({ role }: { role: DashboardRole }) {
         .sidebar-icon { font-size: 10px; color: inherit; opacity: 0.6; flex-shrink: 0; }
         .sidebar-item-row.active .sidebar-icon { opacity: 1; color: var(--orange); }
         .sidebar-subnav-toggle {
-          background: none; border: none; color: var(--grey-mid); cursor: pointer;
-          font-size: 9px; padding: 8px 16px 8px 4px; flex-shrink: 0;
-          transition: transform 0.2s ease, color 0.15s ease;
+          font-size: 15px; line-height: 1; color: var(--grey-mid); flex-shrink: 0;
+          padding: 9px 18px 9px 6px; transition: transform 0.2s ease, color 0.15s ease;
         }
-        .sidebar-subnav-toggle:hover { color: var(--white); }
+        .sidebar-item-row:hover .sidebar-subnav-toggle { color: var(--white); }
         .sidebar-subnav-toggle.open { transform: rotate(180deg); }
         .sidebar-item-row.active .sidebar-subnav-toggle { color: var(--orange); }
         .sidebar-subnav { display: flex; flex-direction: column; padding: 2px 0 6px; }
@@ -146,23 +150,28 @@ export default function Sidebar({ role }: { role: DashboardRole }) {
                 const isApplications = item.href === '/dashboard/applications'
                 return (
                   <div key={item.href}>
-                    <div className={`sidebar-item-row ${isActive ? 'active' : ''}`}>
-                      <Link href={item.href} className={`sidebar-item ${isActive ? 'active' : ''}`}>
-                        <span className="sidebar-icon">{item.icon}</span>
-                        {item.label}
-                      </Link>
-                      {isApplications && (
-                        <button
-                          type="button"
-                          className={`sidebar-subnav-toggle ${subNavOpen ? 'open' : ''}`}
-                          onClick={() => setSubNavOpen((v) => !v)}
-                          aria-label={subNavOpen ? 'Collapse Applications sub-navigation' : 'Expand Applications sub-navigation'}
-                          aria-expanded={subNavOpen}
-                        >
-                          ▾
-                        </button>
-                      )}
-                    </div>
+                    {isApplications ? (
+                      <button
+                        type="button"
+                        className={`sidebar-item-row toggle ${isActive ? 'active' : ''}`}
+                        onClick={() => setSubNavOpen((v) => !v)}
+                        aria-label={subNavOpen ? 'Collapse Applications sub-navigation' : 'Expand Applications sub-navigation'}
+                        aria-expanded={subNavOpen}
+                      >
+                        <span className="sidebar-item">
+                          <span className="sidebar-icon">{item.icon}</span>
+                          {item.label}
+                        </span>
+                        <span className={`sidebar-subnav-toggle ${subNavOpen ? 'open' : ''}`}>▾</span>
+                      </button>
+                    ) : (
+                      <div className={`sidebar-item-row ${isActive ? 'active' : ''}`}>
+                        <Link href={item.href} className="sidebar-item">
+                          <span className="sidebar-icon">{item.icon}</span>
+                          {item.label}
+                        </Link>
+                      </div>
+                    )}
                     {isApplications && subNavOpen && (
                       <div className="sidebar-subnav">
                         {APPLICATIONS_SUB_ITEMS.map((sub) => {
