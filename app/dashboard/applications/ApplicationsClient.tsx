@@ -424,15 +424,28 @@ export default function ApplicationsClient({
 
     setEmailSubject(letter.subject || `Update regarding your application for ${selected.role_title || 'Role'} at Nextrium`)
 
-    const strengthsText = Array.isArray(letter.verifiedStrengthsHighlighted) && letter.verifiedStrengthsHighlighted.length > 0
-      ? `\n\nVerified Strengths Highlighted:\n${letter.verifiedStrengthsHighlighted.map((s) => `• ${s}`).join('\n')}`
-      : ''
-
-    const growthText = Array.isArray(letter.growthOpportunitiesAndGaps) && letter.growthOpportunitiesAndGaps.length > 0
-      ? `\n\nAreas for Development & Next Steps:\n${letter.growthOpportunitiesAndGaps.map((g) => `• ${g}`).join('\n')}`
-      : ''
-
-    const formattedMessage = `${letter.greeting || `Hi ${selected.name.split(' ')[0]},`}\n\n${letter.executiveFeedback || ''}${strengthsText}${growthText}\n\n${letter.closingNote || 'Best regards,\nNextrium Talent Team'}`
+    // letter.body is the actual, complete message the AI engine builds
+    // (compensation disclaimer, Discord invite, report link, etc. — see
+    // generateApplicantFeedbackLetter) and is exactly what the server-side
+    // dispatch path (buildEmailBody) sends. The composer was reassembling
+    // its own shorter version from greeting/executiveFeedback/strengths/
+    // growth/closingNote fields that generateApplicantFeedbackLetter
+    // doesn't actually populate for any recommendation tier, which is why
+    // "Load into Composer" only ever showed a two-line stub. Only fall
+    // back to reconstructing when a letter genuinely has no body.
+    const formattedMessage = letter.body || [
+      letter.greeting || `Hi ${selected.name.split(' ')[0]},`,
+      '',
+      letter.executiveFeedback || '',
+      ...(Array.isArray(letter.verifiedStrengthsHighlighted) && letter.verifiedStrengthsHighlighted.length > 0
+        ? ['', 'Verified Strengths Highlighted:', ...letter.verifiedStrengthsHighlighted.map((s) => `• ${s}`)]
+        : []),
+      ...(Array.isArray(letter.growthOpportunitiesAndGaps) && letter.growthOpportunitiesAndGaps.length > 0
+        ? ['', 'Areas for Development & Next Steps:', ...letter.growthOpportunitiesAndGaps.map((g) => `• ${g}`)]
+        : []),
+      '',
+      letter.closingNote || 'Best regards,\nNextrium Talent Team',
+    ].join('\n')
 
     setEmailMessage(formattedMessage)
     setEmailOpen(true)
