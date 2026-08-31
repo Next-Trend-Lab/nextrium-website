@@ -15,6 +15,7 @@ import {
   startBulkScreenAction,
   getBulkScreenJobStatus,
   getScreeningResultsForApplications,
+  getFreshFeedbackLetter,
   type BulkScreenOutcome,
 } from './actions'
 
@@ -134,6 +135,7 @@ export default function ApplicationsClient({
   const [bulkEmailResult,  setBulkEmailResult]  = useState<{ sentCount: number; skippedCount: number; failedCount: number } | null>(null)
   const [bulkEmailError,   setBulkEmailError]   = useState<string | null>(null)
   const [perCandidateEmailSending, setPerCandidateEmailSending] = useState(false)
+  const [loadingComposer, setLoadingComposer] = useState(false)
   const [perCandidateEmailResult,  setPerCandidateEmailResult]  = useState<string | null>(null)
 
   const defaultSender = senders.find((s) => s.is_default) ?? senders[0]
@@ -403,20 +405,31 @@ export default function ApplicationsClient({
     }
   }
 
-  function handleLoadFeedbackToEmail(screening: AgentScreeningResult) {
+  // Regenerates the letter fresh from the AI engine rather than reading
+  // screening.full_result — that stored copy is frozen at original
+  // screening time and never reflects later wording fixes or a
+  // rebuttal-revised recommendation (see getFreshFeedbackLetter).
+  async function handleLoadFeedbackToEmail() {
     if (!selected) return
-    const consensus = (screening.full_result as any)?.consensus || screening.full_result
-    const letter = consensus?.applicantFeedbackLetter
-    if (!letter) return
+    setLoadingComposer(true)
+    setPerCandidateEmailResult(null)
+
+    const { letter, error } = await getFreshFeedbackLetter(selected.id)
+    setLoadingComposer(false)
+
+    if (error || !letter) {
+      setPerCandidateEmailResult(`Failed: ${error || 'Could not load feedback letter.'}`)
+      return
+    }
 
     setEmailSubject(letter.subject || `Update regarding your application for ${selected.role_title || 'Role'} at Nextrium`)
 
     const strengthsText = Array.isArray(letter.verifiedStrengthsHighlighted) && letter.verifiedStrengthsHighlighted.length > 0
-      ? `\n\nVerified Strengths Highlighted:\n${letter.verifiedStrengthsHighlighted.map((s: string) => `• ${s}`).join('\n')}`
+      ? `\n\nVerified Strengths Highlighted:\n${letter.verifiedStrengthsHighlighted.map((s) => `• ${s}`).join('\n')}`
       : ''
 
     const growthText = Array.isArray(letter.growthOpportunitiesAndGaps) && letter.growthOpportunitiesAndGaps.length > 0
-      ? `\n\nAreas for Development & Next Steps:\n${letter.growthOpportunitiesAndGaps.map((g: string) => `• ${g}`).join('\n')}`
+      ? `\n\nAreas for Development & Next Steps:\n${letter.growthOpportunitiesAndGaps.map((g) => `• ${g}`).join('\n')}`
       : ''
 
     const formattedMessage = `${letter.greeting || `Hi ${selected.name.split(' ')[0]},`}\n\n${letter.executiveFeedback || ''}${strengthsText}${growthText}\n\n${letter.closingNote || 'Best regards,\nNextrium Talent Team'}`
@@ -1546,11 +1559,12 @@ export default function ApplicationsClient({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleLoadFeedbackToEmail(selectedScreening)}
+                                onClick={() => handleLoadFeedbackToEmail()}
+                                disabled={loadingComposer}
                                 className="ai-btn ai-btn-secondary"
                                 style={{ flex: 1 }}
                               >
-                                📋 Load into Composer
+                                {loadingComposer ? 'Loading...' : '📋 Load into Composer'}
                               </button>
                             </div>
                             {perCandidateEmailResult && (

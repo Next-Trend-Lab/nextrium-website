@@ -314,6 +314,30 @@ export async function resolveRebuttalAction(
   }
 }
 
+export interface FreshFeedbackLetter {
+  subject: string
+  greeting: string
+  executiveFeedback: string
+  body: string
+  verifiedStrengthsHighlighted?: string[]
+  growthOpportunitiesAndGaps?: string[]
+  closingNote?: string
+}
+
+export async function getFreshFeedbackLetter(
+  applicationId: string
+): Promise<{ letter?: FreshFeedbackLetter; error?: string }> {
+  const res = await fetchAgentsEngine(`/api/v1/agents/hr/feedback-letter/${applicationId}`, {
+    method: 'GET',
+  })
+
+  if (!res.ok) {
+    return { error: res.error }
+  }
+
+  return { letter: res.data.letter }
+}
+
 export async function getScreeningResultsForApplications(
   applicationIds: string[]
 ): Promise<Record<string, AgentScreeningResult>> {
