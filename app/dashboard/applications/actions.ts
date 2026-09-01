@@ -293,11 +293,12 @@ export interface ResolveRebuttalOutcome {
 export async function resolveRebuttalAction(
   rebuttalId: string,
   action: 'accept' | 'refine' | 'decline',
-  recruiterNotes?: string
+  recruiterNotes?: string,
+  manualOverrides?: { compositeScore?: number; recommendation?: string }
 ): Promise<ResolveRebuttalOutcome> {
   const res = await fetchAgentsEngine(`/api/v1/agents/copilot/rebuttals/${rebuttalId}/resolve`, {
     method: 'POST',
-    body: JSON.stringify({ action, recruiterNotes, dispatchEmail: true }),
+    body: JSON.stringify({ action, recruiterNotes, dispatchEmail: true, manualOverrides }),
   })
 
   if (!res.ok) {

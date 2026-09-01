@@ -34,6 +34,9 @@ export default function RebuttalPanel({
   const [actionPending, setActionPending] = useState<string | null>(null)
   const [declineNotes, setDeclineNotes] = useState('')
   const [showDeclineForm, setShowDeclineForm] = useState(false)
+  const [showAcceptForm, setShowAcceptForm] = useState(false)
+  const [acceptScore, setAcceptScore] = useState('')
+  const [acceptRecommendation, setAcceptRecommendation] = useState('')
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mounted = useRef(true)
 
@@ -104,9 +107,21 @@ export default function RebuttalPanel({
       })
     }
 
+    const manualOverrides = action === 'accept' && (acceptScore.trim() || acceptRecommendation)
+      ? {
+          compositeScore: acceptScore.trim() ? Number(acceptScore) : undefined,
+          recommendation: acceptRecommendation || undefined,
+        }
+      : undefined
+
     setError(null)
     setActionPending(action)
-    const res = await resolveRebuttalAction(rebuttal.id, action, action === 'decline' ? declineNotes : undefined)
+    const res = await resolveRebuttalAction(
+      rebuttal.id,
+      action,
+      action === 'decline' ? declineNotes : undefined,
+      manualOverrides
+    )
     setActionPending(null)
 
     if (res.error) {
@@ -115,6 +130,9 @@ export default function RebuttalPanel({
     }
 
     setShowDeclineForm(false)
+    setShowAcceptForm(false)
+    setAcceptScore('')
+    setAcceptRecommendation('')
     await load()
     onResolved?.()
   }
@@ -230,7 +248,11 @@ export default function RebuttalPanel({
           )}
           {hasDelta && (
             <>
-              <button className="rebuttal-btn accept" disabled={!!actionPending} onClick={() => handleResolve('accept')}>
+              <button
+                className="rebuttal-btn accept"
+                disabled={!!actionPending}
+                onClick={() => setShowAcceptForm((v) => !v)}
+              >
                 {actionPending === 'accept' ? 'Applying…' : 'Accept'}
               </button>
               <button className="rebuttal-btn refine" disabled={!!actionPending} onClick={() => handleResolve('refine')}>
@@ -245,6 +267,49 @@ export default function RebuttalPanel({
               </button>
             </>
           )}
+        </div>
+      )}
+
+      {showAcceptForm && (
+        <div>
+          <div style={{ fontSize: '10.5px', color: 'var(--grey-mid)', marginBottom: '6px' }}>
+            Human recruiter manual adjustment (optional) — leave blank to accept the AI-computed score above as-is.
+          </div>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: '9px', color: 'var(--grey-mid)', display: 'block', marginBottom: '4px' }}>Override score</label>
+              <input
+                className="rebuttal-textarea"
+                style={{ minHeight: 'auto' }}
+                type="number"
+                min={0}
+                max={100}
+                value={acceptScore}
+                onChange={(e) => setAcceptScore(e.target.value)}
+                placeholder={rebuttal.newScore != null ? String(rebuttal.newScore) : 'e.g. 78'}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: '9px', color: 'var(--grey-mid)', display: 'block', marginBottom: '4px' }}>Override recommendation</label>
+              <select
+                className="rebuttal-textarea"
+                style={{ minHeight: 'auto' }}
+                value={acceptRecommendation}
+                onChange={(e) => setAcceptRecommendation(e.target.value)}
+              >
+                <option value="">— No change —</option>
+                <option value="Strong Hire">Strong Hire</option>
+                <option value="Proceed to Recruiter Screen">Proceed to Recruiter Screen</option>
+                <option value="Hold">Hold</option>
+                <option value="Reject">Reject</option>
+              </select>
+            </div>
+          </div>
+          <div className="rebuttal-btn-row">
+            <button className="rebuttal-btn accept" disabled={actionPending === 'accept'} onClick={() => handleResolve('accept')}>
+              {actionPending === 'accept' ? 'Applying…' : 'Confirm accept'}
+            </button>
+          </div>
         </div>
       )}
 
