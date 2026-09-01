@@ -1,10 +1,70 @@
 'use server'
 
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { fetchAgentsEngine } from '@/lib/agentsEngine'
 import { logActivity } from '@/lib/activityLog'
 import type { AgentScreeningResult } from '@/lib/types/database'
+
+export interface ReviewedInfo {
+  firstReviewedByEmail: string | null
+  firstReviewedAt: string | null
+  lastReviewedByEmail: string | null
+  lastReviewedAt: string | null
+}
+
+/**
+ * Stamps an application as human-reviewed. first_* is set once and never
+ * overwritten (there's no point re-reviewing what's already been looked
+ * at - this is who originally reviewed it); last_* refreshes on every
+ * call, so who most recently acted on it is always visible too. Called
+ * after the two actions that actually constitute "a human looked at
+ * this": a manual status change, and resolving a rebuttal.
+ */
+export async function markApplicationReviewed(applicationId: string): Promise<{ reviewed?: ReviewedInfo; error?: string }> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Not signed in.' }
+
+    const serviceClient = createServiceClient()
+    const { data: existing } = await (serviceClient.from('applications') as any)
+      .select('first_reviewed_by, first_reviewed_by_email, first_reviewed_at')
+      .eq('id', applicationId)
+      .maybeSingle()
+
+    const now = new Date().toISOString()
+    const isFirstReview = !existing?.first_reviewed_by
+
+    const { data: updated, error } = await (serviceClient.from('applications') as any)
+      .update({
+        ...(isFirstReview
+          ? { first_reviewed_by: user.id, first_reviewed_by_email: user.email, first_reviewed_at: now }
+          : {}),
+        last_reviewed_by: user.id,
+        last_reviewed_by_email: user.email,
+        last_reviewed_at: now,
+      })
+      .eq('id', applicationId)
+      .select('first_reviewed_by_email, first_reviewed_at, last_reviewed_by_email, last_reviewed_at')
+      .single()
+
+    if (error) throw new Error(error.message)
+
+    revalidatePath('/dashboard/applications')
+    return {
+      reviewed: {
+        firstReviewedByEmail: updated.first_reviewed_by_email,
+        firstReviewedAt: updated.first_reviewed_at,
+        lastReviewedByEmail: updated.last_reviewed_by_email,
+        lastReviewedAt: updated.last_reviewed_at,
+      },
+    }
+  } catch (err) {
+    console.error('[markApplicationReviewed] Error:', err)
+    return { error: err instanceof Error ? err.message : 'Failed to mark application as reviewed.' }
+  }
+}
 
 export async function deleteApplication(id: string): Promise<{ error?: string }> {
   try {

@@ -7,7 +7,9 @@ import {
   getRebuttalDetail,
   triggerRebuttalRescreen,
   resolveRebuttalAction,
+  markApplicationReviewed,
   type RebuttalDetail,
+  type ReviewedInfo,
 } from './actions'
 
 /**
@@ -21,11 +23,13 @@ export default function RebuttalPanel({
   applicationId,
   candidateName,
   onResolved,
+  onReviewed,
 }: {
   reportId: string
   applicationId: string
   candidateName: string
   onResolved?: () => void
+  onReviewed?: (reviewed: ReviewedInfo) => void
 }) {
   const { openCopilot } = useDashboard()
   const [rebuttal, setRebuttal] = useState<RebuttalDetail | null>(null)
@@ -136,6 +140,13 @@ export default function RebuttalPanel({
     setAcceptRecommendation('')
     await load()
     onResolved?.()
+
+    // Accepting, refining, or declining a rebuttal is a human recruiter
+    // actively deciding this application's outcome - exactly the kind of
+    // secondary look the reviewed marker exists to record.
+    markApplicationReviewed(applicationId).then(({ reviewed }) => {
+      if (reviewed) onReviewed?.(reviewed)
+    })
   }
 
   if (loading) {
