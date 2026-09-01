@@ -38,7 +38,7 @@ const RECOMMENDATION_COLORS: Record<string, string> = {
   'Reject':                      'E84545',
 }
 
-export default function ReportClient({ report }: { report: Report }) {
+export default function ReportClient({ report, rebuttalStatus }: { report: Report; rebuttalStatus: string | null }) {
   const ds      = report.dimension_scores
   const recColor = RECOMMENDATION_COLORS[report.recommendation] ?? '8A9BB0'
 
@@ -130,8 +130,11 @@ export default function ReportClient({ report }: { report: Report }) {
         </div>
         {report.rebuttal_submitted ? (
           <div className={styles.rebuttalDone}>
-            Your rebuttal has been submitted and is under review by the
-            Nextrium operations team.
+            {rebuttalStatus === 'resolved'
+              ? 'Your dispute has been reviewed and accepted — this report has been updated to reflect the revised assessment.'
+              : rebuttalStatus === 'dismissed'
+              ? 'Your dispute has been reviewed. After careful consideration, the original assessment has been upheld.'
+              : 'Your rebuttal has been submitted and is under review by the Nextrium operations team.'}
           </div>
         ) : (
           <p className={styles.rebuttalDesc}>
