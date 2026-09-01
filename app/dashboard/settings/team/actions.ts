@@ -2,6 +2,7 @@
 
 import { createServiceClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { logActivity } from '@/lib/activityLog'
 
 export async function inviteUser(email: string, role: string): Promise<{ error?: string }> {
   try {
@@ -47,6 +48,12 @@ export async function inviteUser(email: string, role: string): Promise<{ error?:
     if (insertError) throw new Error(insertError.message)
 
     revalidatePath('/dashboard/settings/team')
+    logActivity({
+      action: 'team_user_invited',
+      targetType: 'dashboard_user',
+      targetId: userId,
+      details: { email, role },
+    }).catch(() => {})
     return {}
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to invite user.' }
@@ -63,6 +70,12 @@ export async function updateRole(userId: string, role: string): Promise<{ error?
     if (error) throw new Error(error.message)
 
     revalidatePath('/dashboard/settings/team')
+    logActivity({
+      action: 'team_user_role_updated',
+      targetType: 'dashboard_user',
+      targetId: userId,
+      details: { newRole: role },
+    }).catch(() => {})
     return {}
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to update role.' }
@@ -79,6 +92,11 @@ export async function removeUser(userId: string): Promise<{ error?: string }> {
     if (error) throw new Error(error.message)
 
     revalidatePath('/dashboard/settings/team')
+    logActivity({
+      action: 'team_user_removed',
+      targetType: 'dashboard_user',
+      targetId: userId,
+    }).catch(() => {})
     return {}
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to remove user.' }

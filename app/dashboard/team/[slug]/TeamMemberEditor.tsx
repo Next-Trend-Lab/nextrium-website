@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import Header from '@/components/dashboard/Header'
 import CoverImageUpload from '@/components/dashboard/CoverImageUpload'
 import type { TeamMember } from '@/lib/types/database'
+import { logActivityAction } from '@/app/actions/activityLog'
 
 function slugify(str: string): string {
   return str.toLowerCase().trim()
@@ -65,12 +66,24 @@ export default function TeamMemberEditor({ member }: { member: TeamMember | null
         const { error: err } = await (supabase.from('team_members') as any).insert({ ...payload, created_at: now })
         if (err) throw err
         setSuccess('Member added.')
+        logActivityAction({
+          action: 'team_member_added',
+          targetType: 'team_member',
+          targetId: payload.slug,
+          details: { name: payload.name },
+        }).catch(() => {})
         router.push(`/dashboard/team/${payload.slug}`)
         router.refresh()
       } else {
         const { error: err } = await (supabase.from('team_members') as any).update(payload).eq('slug', member!.slug)
         if (err) throw err
         setSuccess('Member saved.')
+        logActivityAction({
+          action: 'team_member_updated',
+          targetType: 'team_member',
+          targetId: payload.slug,
+          details: { name: payload.name },
+        }).catch(() => {})
         router.refresh()
         if (slug !== member!.slug) router.push(`/dashboard/team/${payload.slug}`)
       }
@@ -88,6 +101,12 @@ export default function TeamMemberEditor({ member }: { member: TeamMember | null
     const supabase = createClient()
     const { error: err } = await supabase.from('team_members').delete().eq('slug', member.slug)
     if (err) { setError(err.message); setDeleting(false); return }
+    logActivityAction({
+      action: 'team_member_removed',
+      targetType: 'team_member',
+      targetId: member.slug,
+      details: { name: member.name },
+    }).catch(() => {})
     router.push('/dashboard/team')
     router.refresh()
   }

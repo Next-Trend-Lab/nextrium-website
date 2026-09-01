@@ -16,7 +16,9 @@ import {
   getBulkScreenJobStatus,
   getScreeningResultsForApplications,
   getFreshFeedbackLetter,
+  markApplicationReviewed,
   type BulkScreenOutcome,
+  type ReviewedInfo,
 } from './actions'
 
 const BULK_SCREEN_JOB_STORAGE_KEY = 'nextrium-active-bulk-screen-job'
@@ -149,6 +151,17 @@ export default function ApplicationsClient({
   const [emailResult,        setEmailResult]        = useState<'success' | 'error' | null>(null)
   const [emailAttachFiles,   setEmailAttachFiles]   = useState<{ name: string; content: string }[]>([])
 
+  function applyReviewedInfo(id: string, reviewed: ReviewedInfo) {
+    const patch = {
+      first_reviewed_by_email: reviewed.firstReviewedByEmail,
+      first_reviewed_at: reviewed.firstReviewedAt,
+      last_reviewed_by_email: reviewed.lastReviewedByEmail,
+      last_reviewed_at: reviewed.lastReviewedAt,
+    }
+    setApplications((prev) => prev.map((a) => a.id === id ? { ...a, ...patch } : a))
+    setSelected((prev) => (prev && prev.id === id ? { ...prev, ...patch } : prev))
+  }
+
   async function updateStatus(id: string, status: Application['status']) {
     setUpdating(true)
     const supabase = createClient()
@@ -164,6 +177,12 @@ export default function ApplicationsClient({
         targetId: id,
         details: { newStatus: status },
       }).catch(() => {})
+
+      // A manual status change is exactly the kind of "a human looked at
+      // this" moment the reviewed marker exists for.
+      markApplicationReviewed(id).then(({ reviewed }) => {
+        if (reviewed) applyReviewedInfo(id, reviewed)
+      })
     }
     setUpdating(false)
   }
@@ -713,6 +732,8 @@ export default function ApplicationsClient({
         .detail-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.06); }
         .detail-name { font-family: var(--font-exo2); font-weight: 700; font-size: 18px; color: var(--white); letter-spacing: -0.3px; margin-bottom: 4px; }
         .detail-email { font-size: 13px; color: var(--orange); }
+        .reviewed-chip { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 8px; background: rgba(34,193,122,0.1); border: 1px solid rgba(34,193,122,0.3); color: var(--success); }
+        .reviewed-first-note { display: block; margin-top: 4px; font-size: 10.5px; color: var(--grey-mid); }
         .detail-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
         .detail-section-title { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--grey-mid); margin-bottom: 8px; }
         .detail-text { font-size: 13px; color: var(--off-white); line-height: 1.7; }
@@ -1052,6 +1073,14 @@ export default function ApplicationsClient({
                         {app.name}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center' }}>
+                        {(app as any).last_reviewed_by_email && (
+                          <span
+                            title={`Reviewed by ${(app as any).last_reviewed_by_email}`}
+                            style={{ color: 'var(--success)', fontSize: '12px', marginRight: '6px' }}
+                          >
+                            ✓
+                          </span>
+                        )}
                         <span className="dash-badge" style={{ background: ss.bg, color: ss.color, border: `1px solid ${ss.color}33` }}>
                           {app.status}
                         </span>
@@ -1164,6 +1193,14 @@ export default function ApplicationsClient({
                             </td>
                             <td>{screening?.consensus_tier ?? '—'}</td>
                             <td>
+                              {(app as any).last_reviewed_by_email && (
+                                <span
+                                  title={`Reviewed by ${(app as any).last_reviewed_by_email}`}
+                                  style={{ color: 'var(--success)', fontSize: '12px', marginRight: '6px' }}
+                                >
+                                  ✓
+                                </span>
+                              )}
                               <span className="dash-badge" style={{ background: ss.bg, color: ss.color, border: `1px solid ${ss.color}33` }}>
                                 {app.status}
                               </span>
@@ -1193,6 +1230,19 @@ export default function ApplicationsClient({
                 <div className="detail-header">
                   <div className="detail-name">{selected.name}</div>
                   <div className="detail-email">{selected.email}</div>
+                  {(selected as any).last_reviewed_by_email && (
+                    <div>
+                      <span className="reviewed-chip">
+                        ✓ Reviewed by {(selected as any).last_reviewed_by_email}
+                      </span>
+                      {(selected as any).first_reviewed_by_email &&
+                        (selected as any).first_reviewed_by_email !== (selected as any).last_reviewed_by_email && (
+                          <span className="reviewed-first-note">
+                            First reviewed by {(selected as any).first_reviewed_by_email}
+                          </span>
+                        )}
+                    </div>
+                  )}
                 </div>
                 <div className="detail-body">
 
@@ -1322,6 +1372,7 @@ export default function ApplicationsClient({
                             applicationId={selected.id}
                             candidateName={selected.name}
                             onResolved={() => refreshScreeningResult(selected.id)}
+                            onReviewed={(reviewed) => applyReviewedInfo(selected.id, reviewed)}
                           />
                         )}
 

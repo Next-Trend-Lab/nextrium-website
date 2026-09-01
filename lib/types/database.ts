@@ -253,6 +253,12 @@ export type Database = {
           project_links: { url: string; description: string }[] | null
           created_at: string
           updated_at: string
+          first_reviewed_by: string | null
+          first_reviewed_by_email: string | null
+          first_reviewed_at: string | null
+          last_reviewed_by: string | null
+          last_reviewed_by_email: string | null
+          last_reviewed_at: string | null
         }
         Insert: {
           id?: string

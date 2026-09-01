@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Header from '@/components/dashboard/Header'
 import type { Role } from '@/lib/types/database'
+import { logActivityAction } from '@/app/actions/activityLog'
 
 interface RoleEditorProps {
   role: Role | null
@@ -74,12 +75,24 @@ export default function RoleEditor({ role }: RoleEditorProps) {
         const { error: err } = await (supabase.from('roles') as any).insert({ ...payload, created_at: now })
         if (err) throw err
         setSuccess('Role created.')
+        logActivityAction({
+          action: payload.is_active ? 'role_published' : 'role_created',
+          targetType: 'role',
+          targetId: payload.slug,
+          details: { title: payload.title },
+        }).catch(() => {})
         router.push(`/dashboard/roles/${payload.slug}`)
         router.refresh()
       } else {
         const { error: err } = await (supabase.from('roles') as any).update(payload).eq('slug', role!.slug)
         if (err) throw err
         setSuccess('Role saved.')
+        logActivityAction({
+          action: payload.is_active && !role!.is_active ? 'role_published' : 'role_updated',
+          targetType: 'role',
+          targetId: payload.slug,
+          details: { title: payload.title },
+        }).catch(() => {})
         router.refresh()
         if (slug !== role!.slug) router.push(`/dashboard/roles/${payload.slug}`)
       }
@@ -97,6 +110,12 @@ export default function RoleEditor({ role }: RoleEditorProps) {
     const supabase = createClient()
     const { error: err } = await supabase.from('roles').delete().eq('slug', role.slug)
     if (err) { setError(err.message); setDeleting(false); return }
+    logActivityAction({
+      action: 'role_deleted',
+      targetType: 'role',
+      targetId: role.slug,
+      details: { title: role.title },
+    }).catch(() => {})
     router.push('/dashboard/roles')
     router.refresh()
   }
