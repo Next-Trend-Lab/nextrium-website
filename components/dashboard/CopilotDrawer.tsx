@@ -22,6 +22,9 @@ export default function CopilotDrawer() {
   const [urlInput, setUrlInput] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [overrideOpen, setOverrideOpen] = useState(false)
+  const [overrideScore, setOverrideScore] = useState('')
+  const [overrideRecommendation, setOverrideRecommendation] = useState('')
   const bodyEndRef = useRef<HTMLDivElement>(null)
 
   const open = !!copilotTarget
@@ -45,11 +48,18 @@ export default function CopilotDrawer() {
   }, [history, sending])
 
   async function handleSend() {
-    if (!copilotTarget || (!prompt.trim() && !pastedText.trim())) return
+    if (!copilotTarget || (!prompt.trim() && !pastedText.trim() && !overrideOpen)) return
     setSending(true)
     setError(null)
 
     const manualUrls = urlInput.split(',').map((u) => u.trim()).filter(Boolean)
+
+    const manualOverrides = overrideOpen && (overrideScore.trim() || overrideRecommendation)
+      ? {
+          compositeScore: overrideScore.trim() ? Number(overrideScore) : undefined,
+          recommendation: overrideRecommendation || undefined,
+        }
+      : undefined
 
     const result = await sendCopilotChat({
       domainType: copilotTarget.domainType,
@@ -58,6 +68,7 @@ export default function CopilotDrawer() {
       prompt: prompt.trim() || 'Please review the attached evidence.',
       pastedText: pastedText.trim() || undefined,
       manualUrls: manualUrls.length > 0 ? manualUrls : undefined,
+      manualOverrides,
     })
 
     setSending(false)
@@ -72,8 +83,8 @@ export default function CopilotDrawer() {
       {
         id: `local-${Date.now()}`,
         sender: 'recruiter',
-        message_type: 'chat',
-        content: prompt.trim(),
+        message_type: manualOverrides ? 'score_override' : 'chat',
+        content: prompt.trim() || (manualOverrides ? 'Manual score/recommendation override applied.' : ''),
         created_at: new Date().toISOString(),
       },
       {
@@ -88,6 +99,9 @@ export default function CopilotDrawer() {
     setPrompt('')
     setPastedText('')
     setUrlInput('')
+    setOverrideOpen(false)
+    setOverrideScore('')
+    setOverrideRecommendation('')
   }
 
   return (
@@ -116,6 +130,21 @@ export default function CopilotDrawer() {
         .copilot-send-btn:hover:not(:disabled) { background: var(--orange-w); }
         .copilot-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .copilot-error { color: var(--error); font-size: 11.5px; margin-top: 8px; }
+        .copilot-override-toggle {
+          display: flex; align-items: center; gap: 8px; background: none; border: none;
+          color: var(--grey-mid); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em;
+          text-transform: uppercase; cursor: pointer; padding: 8px 0; margin-top: 6px; width: 100%;
+        }
+        .copilot-override-toggle:hover { color: var(--white); }
+        .copilot-override-box {
+          border: 1px solid rgba(219,103,39,0.25); background: rgba(219,103,39,0.04);
+          padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-top: 4px;
+        }
+        .copilot-override-row { display: flex; gap: 8px; }
+        .copilot-select {
+          width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+          color: var(--white); padding: 8px 10px; font-size: 12.5px; font-family: var(--font-dm);
+        }
       `}</style>
 
       {!copilotTarget ? null : (
@@ -172,9 +201,53 @@ export default function CopilotDrawer() {
               placeholder="Explain what you're providing and why…"
             />
 
+            <button
+              type="button"
+              className="copilot-override-toggle"
+              onClick={() => setOverrideOpen((v) => !v)}
+              aria-expanded={overrideOpen}
+            >
+              {overrideOpen ? '▾' : '▸'} Human recruiter manual adjustment (optional)
+            </button>
+            {overrideOpen && (
+              <div className="copilot-override-box">
+                <div className="copilot-override-row">
+                  <div style={{ flex: 1 }}>
+                    <label className="copilot-field-label">Override composite score</label>
+                    <input
+                      className="copilot-input"
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={overrideScore}
+                      onChange={(e) => setOverrideScore(e.target.value)}
+                      placeholder="e.g. 78"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="copilot-field-label">Override recommendation</label>
+                  <select
+                    className="copilot-select"
+                    value={overrideRecommendation}
+                    onChange={(e) => setOverrideRecommendation(e.target.value)}
+                  >
+                    <option value="">— No change —</option>
+                    <option value="Strong Hire">Strong Hire</option>
+                    <option value="Proceed to Recruiter Screen">Proceed to Recruiter Screen</option>
+                    <option value="Hold">Hold</option>
+                    <option value="Reject">Reject</option>
+                  </select>
+                </div>
+                <div style={{ fontSize: '10.5px', color: 'var(--grey-mid)' }}>
+                  Applied alongside whatever else you send below. Leave both blank to change nothing.
+                </div>
+              </div>
+            )}
+
             {error && <div className="copilot-error">{error}</div>}
 
-            <button className="copilot-send-btn" onClick={handleSend} disabled={sending || (!prompt.trim() && !pastedText.trim())}>
+            <button className="copilot-send-btn" onClick={handleSend} disabled={sending || (!prompt.trim() && !pastedText.trim() && !overrideOpen)}>
               {sending ? 'Sending…' : 'Send to Co-Pilot'}
             </button>
           </div>
