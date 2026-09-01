@@ -20,6 +20,12 @@ const ACTION_LABELS: Record<string, string> = {
   application_status_updated: 'Updated status',
   feedback_emails_dispatched: 'Dispatched feedback emails',
   bulk_screen_started: 'Started bulk screening',
+  rebuttal_accept: 'Accepted rebuttal',
+  rebuttal_refine: 'Sent rebuttal for refinement',
+  rebuttal_decline: 'Declined rebuttal',
+  team_user_invited: 'Invited team member',
+  team_user_role_updated: 'Updated team member role',
+  team_user_removed: 'Removed team member',
 }
 
 const ACTION_COLORS: Record<string, string> = {
@@ -31,6 +37,12 @@ const ACTION_COLORS: Record<string, string> = {
   application_status_updated: 'var(--slate)',
   feedback_emails_dispatched: 'var(--orange)',
   bulk_screen_started: 'var(--orange)',
+  rebuttal_accept: 'var(--success)',
+  rebuttal_refine: 'var(--gold)',
+  rebuttal_decline: 'var(--error)',
+  team_user_invited: 'var(--success)',
+  team_user_role_updated: 'var(--slate)',
+  team_user_removed: 'var(--error)',
 }
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -67,6 +79,14 @@ function summarizeDetails(log: TeamActivityLog): string {
       return `${d.sentCount ?? 0} sent, ${d.skippedCount ?? 0} skipped, ${d.failedCount ?? 0} failed`
     case 'bulk_screen_started':
       return `${d.applicationCount ?? '—'} candidate(s)`
+    case 'rebuttal_accept':
+    case 'rebuttal_refine':
+    case 'rebuttal_decline':
+      return d.updatedScore !== undefined ? `New score: ${d.updatedScore}%` : (d.recruiterNotes as string) || '—'
+    case 'team_user_invited':
+      return [d.email, d.role].filter(Boolean).join(' · ') || '—'
+    case 'team_user_role_updated':
+      return `→ ${d.newRole ?? '—'}`
     default:
       return Object.keys(d).length > 0 ? JSON.stringify(d) : '—'
   }
