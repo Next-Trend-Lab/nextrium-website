@@ -136,6 +136,7 @@ export default function ApplicationsClient({
   const [bulkEmailError,   setBulkEmailError]   = useState<string | null>(null)
   const [perCandidateEmailSending, setPerCandidateEmailSending] = useState(false)
   const [loadingComposer, setLoadingComposer] = useState(false)
+  const [loadingScreeningDetail, setLoadingScreeningDetail] = useState<string | null>(null)
   const [perCandidateEmailResult,  setPerCandidateEmailResult]  = useState<string | null>(null)
 
   const defaultSender = senders.find((s) => s.is_default) ?? senders[0]
@@ -612,6 +613,22 @@ export default function ApplicationsClient({
     setEmailResult(null)
     setEmailAttachFiles([])
     setPerCandidateEmailResult(null)
+
+    // The initial page load intentionally excludes full_result (the full
+    // evaluation dossier) from every row to keep that query cheap — it's
+    // only ever needed for whichever one candidate is currently open. Fetch
+    // it now if this candidate has a screening result but we don't have its
+    // full_result yet.
+    const existing = screeningResults[app.id]
+    if (existing && !existing.full_result) {
+      setLoadingScreeningDetail(app.id)
+      getScreeningResultsForApplications([app.id]).then((records) => {
+        if (records[app.id]) {
+          setScreeningResults((prev) => ({ ...prev, [app.id]: records[app.id] }))
+        }
+        setLoadingScreeningDetail((current) => (current === app.id ? null : current))
+      })
+    }
   }
 
   function toggleSelectedId(id: string) {
@@ -1164,6 +1181,9 @@ export default function ApplicationsClient({
                     <div className="ai-box-header">
                       <div className="ai-box-title">
                         <span>⚡ AI Consensus Evaluation</span>
+                        {selected && loadingScreeningDetail === selected.id && (
+                          <span style={{ fontSize: '10px', color: 'var(--grey-mid)', fontWeight: 400 }}>Loading full evaluation…</span>
+                        )}
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         {selectedScreening && (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getAgentMetrics, type AgentMetrics } from './actions'
 import { startBulkScreenAction } from '../applications/actions'
 
@@ -66,7 +66,11 @@ export default function AIEngineClient({
   const [selectedAgentId, setSelectedAgentId] = useState('hr-screening')
   const [metrics,   setMetrics]   = useState<AgentMetrics | null>(initialMetrics)
   const [error,     setError]     = useState<string | null>(initialError)
-  const [refreshing, setRefreshing] = useState(false)
+  // The page no longer awaits this metrics fetch server-side (it calls out
+  // to the Render-hosted agents-engine and can take up to ~50s on a cold
+  // start) — it renders immediately with null metrics instead, and this
+  // fetches them client-side right after mount so first paint is instant.
+  const [refreshing, setRefreshing] = useState(initialMetrics === null && !initialError)
   const [selectedFailedIds, setSelectedFailedIds] = useState<Set<string>>(new Set())
   const [retrying,   setRetrying]   = useState(false)
   const [retryResult, setRetryResult] = useState<string | null>(null)
@@ -81,6 +85,13 @@ export default function AIEngineClient({
     else setMetrics(res.metrics ?? null)
     setRefreshing(false)
   }
+
+  useEffect(() => {
+    if (initialMetrics === null && !initialError) {
+      handleRefresh()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function toggleFailedSelection(applicationId: string) {
     setSelectedFailedIds((prev) => {
@@ -202,6 +213,10 @@ export default function AIEngineClient({
           ) : error ? (
             <div className="metrics-body">
               <div className="error-note">Failed to load metrics: {error}</div>
+            </div>
+          ) : !metrics && refreshing ? (
+            <div className="metrics-body">
+              <div className="empty-note">Loading metrics — this can take up to a minute if the AI engine is waking up from idle…</div>
             </div>
           ) : !metrics ? (
             <div className="metrics-body">
