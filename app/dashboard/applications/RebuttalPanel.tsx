@@ -54,6 +54,15 @@ export default function RebuttalPanel({
 
     if (data?.status === 'rescreening') {
       pollTimer.current = setTimeout(load, 3000)
+    } else if (data?.status === 'in_review') {
+      // Waiting on evidence fed through the Co-Pilot chat drawer, which is
+      // a separate component with no direct link to this one — the only
+      // way this panel finds out a chat reply produced a new delta (moving
+      // status to 'rescreened' server-side) is by checking back itself.
+      // Slower than the rescreening poll since this can sit here for
+      // minutes while a recruiter is actively chatting, not a few seconds
+      // of automated work.
+      pollTimer.current = setTimeout(load, 12000)
     }
   }
 
