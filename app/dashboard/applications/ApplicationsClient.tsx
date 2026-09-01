@@ -136,6 +136,7 @@ export default function ApplicationsClient({
   const [bulkEmailError,   setBulkEmailError]   = useState<string | null>(null)
   const [perCandidateEmailSending, setPerCandidateEmailSending] = useState(false)
   const [loadingComposer, setLoadingComposer] = useState(false)
+  const [loadingScreeningDetail, setLoadingScreeningDetail] = useState<string | null>(null)
   const [perCandidateEmailResult,  setPerCandidateEmailResult]  = useState<string | null>(null)
 
   const defaultSender = senders.find((s) => s.is_default) ?? senders[0]
@@ -499,9 +500,17 @@ export default function ApplicationsClient({
   const selectedConsensus = selectedScreening ? ((selectedScreening.full_result as any)?.consensus || selectedScreening.full_result) : null
   const selectedLayer2    = selectedConsensus?.layer2ArtifactScorecard ?? null
   const selectedArtifacts = selectedConsensus?.inspectedArtifacts ?? null
-  const selectedReportId  = selectedConsensus?.publicFeedbackReport?.reportId ?? rebuttalStatuses[selected?.id ?? '']?.reportId ?? null
-  const selectedReportUrl = selectedReportId ? `https://www.nextrium.org/feedback/${selectedReportId}` : null
   const selectedRebuttal  = selected ? rebuttalStatuses[selected.id] : null
+  // When a rebuttal exists, its report id (already resolved to whichever
+  // duplicate row actually carries the rebuttal — see getRebuttalStatuses
+  // in page.tsx) takes priority over the latest live screening result's
+  // report id, which can point at a newer, unrelated report row if this
+  // candidate was rescreened after the rebuttal was filed.
+  const selectedReportId  = (selectedRebuttal?.rebuttalSubmitted && selectedRebuttal.reportId)
+    || selectedConsensus?.publicFeedbackReport?.reportId
+    || selectedRebuttal?.reportId
+    || null
+  const selectedReportUrl = selectedReportId ? `https://www.nextrium.org/feedback/${selectedReportId}` : null
 
   const batchQueueIndex = selected ? batchTargetIds.indexOf(selected.id) : -1
   const batchCompletedCount = batchProgress?.current ?? 0
@@ -612,6 +621,22 @@ export default function ApplicationsClient({
     setEmailResult(null)
     setEmailAttachFiles([])
     setPerCandidateEmailResult(null)
+
+    // The initial page load intentionally excludes full_result (the full
+    // evaluation dossier) from every row to keep that query cheap — it's
+    // only ever needed for whichever one candidate is currently open. Fetch
+    // it now if this candidate has a screening result but we don't have its
+    // full_result yet.
+    const existing = screeningResults[app.id]
+    if (existing && !existing.full_result) {
+      setLoadingScreeningDetail(app.id)
+      getScreeningResultsForApplications([app.id]).then((records) => {
+        if (records[app.id]) {
+          setScreeningResults((prev) => ({ ...prev, [app.id]: records[app.id] }))
+        }
+        setLoadingScreeningDetail((current) => (current === app.id ? null : current))
+      })
+    }
   }
 
   function toggleSelectedId(id: string) {
@@ -1164,6 +1189,9 @@ export default function ApplicationsClient({
                     <div className="ai-box-header">
                       <div className="ai-box-title">
                         <span>⚡ AI Consensus Evaluation</span>
+                        {selected && loadingScreeningDetail === selected.id && (
+                          <span style={{ fontSize: '10px', color: 'var(--grey-mid)', fontWeight: 400 }}>Loading full evaluation…</span>
+                        )}
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         {selectedScreening && (

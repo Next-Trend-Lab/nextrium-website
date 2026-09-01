@@ -113,7 +113,22 @@ export default function RebuttalPanel({
   if (loading) {
     return <div style={{ fontSize: '11px', color: 'var(--grey-mid)' }}>Loading rebuttal…</div>
   }
-  if (!rebuttal) return null
+  // A fetch error used to be silently discarded here — the panel just
+  // vanished with no indication anything went wrong, which is exactly why
+  // a candidate correctly flagged as having a submitted rebuttal appeared
+  // to have no rebuttal content at all whenever the underlying query
+  // failed (as it always did — see getRebuttalDetail's submitted_at fix).
+  if (!rebuttal) {
+    if (error) {
+      return (
+        <div className="rebuttal-panel">
+          <style>{`.rebuttal-error { color: var(--error); font-size: 11.5px; }`}</style>
+          <div className="rebuttal-error">Could not load this rebuttal: {error}</div>
+        </div>
+      )
+    }
+    return null
+  }
 
   const isRescreening = rebuttal.status === 'rescreening'
   const isFinal = rebuttal.status === 'resolved' || rebuttal.status === 'dismissed'

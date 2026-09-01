@@ -16,11 +16,19 @@ const ROLE_COOKIE = 'nextrium-role'
  * dashboard_users query on every single dashboard page render, on top of
  * the middleware doing the exact same check moments earlier. Reusing the
  * cache here cuts that duplicate round-trip on every navigation.
+ *
+ * Uses getSession() (reads the local cookie/JWT, no network call) rather
+ * than getUser() (revalidates with the auth server) — middleware already
+ * ran the authoritative getUser() check for this exact request before this
+ * layout ever executes, and unauthenticated requests never reach here at
+ * all, so re-verifying with another network round-trip here is pure
+ * duplicate work, not an additional security boundary.
  */
 export async function getDashboardRole(): Promise<DashboardRole> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return 'community'
 
   const cookieStore = await cookies()
