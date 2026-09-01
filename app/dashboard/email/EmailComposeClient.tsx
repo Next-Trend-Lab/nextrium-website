@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import type { Application, TeamMember } from '@/lib/types/database'
+import { logActivityAction } from '@/app/actions/activityLog'
 
 interface EmailSender {
   id: string
@@ -128,6 +129,11 @@ export default function EmailComposeClient({
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to send.')
       setResults(data.results)
+      logActivityAction({
+        action: 'email_sent',
+        targetType: 'email',
+        details: { subject, recipientCount: recipients.length },
+      }).catch(() => {})
       setSubject('')
       setMessage('')
       clearSelection()

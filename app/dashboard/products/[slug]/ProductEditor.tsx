@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import Header from '@/components/dashboard/Header'
 import CoverImageUpload from '@/components/dashboard/CoverImageUpload'
 import type { Product } from '@/lib/types/database'
+import { logActivityAction } from '@/app/actions/activityLog'
 
 interface ProductEditorProps {
   product: Product | null
@@ -78,12 +79,24 @@ export default function ProductEditor({ product }: ProductEditorProps) {
         const { error: err } = await (supabase.from('products') as any).insert({ ...payload, created_at: now })
         if (err) throw err
         setSuccess('Product created.')
+        logActivityAction({
+          action: 'product_created',
+          targetType: 'product',
+          targetId: payload.slug,
+          details: { name: payload.name },
+        }).catch(() => {})
         router.push(`/dashboard/products/${payload.slug}`)
         router.refresh()
       } else {
         const { error: err } = await (supabase.from('products') as any).update(payload).eq('slug', product!.slug)
         if (err) throw err
         setSuccess('Product saved.')
+        logActivityAction({
+          action: 'product_updated',
+          targetType: 'product',
+          targetId: payload.slug,
+          details: { name: payload.name },
+        }).catch(() => {})
         router.refresh()
         if (slug !== product!.slug) router.push(`/dashboard/products/${payload.slug}`)
       }
@@ -101,6 +114,12 @@ export default function ProductEditor({ product }: ProductEditorProps) {
     const supabase = createClient()
     const { error: err } = await supabase.from('products').delete().eq('slug', product.slug)
     if (err) { setError(err.message); setDeleting(false); return }
+    logActivityAction({
+      action: 'product_deleted',
+      targetType: 'product',
+      targetId: product.slug,
+      details: { name: product.name },
+    }).catch(() => {})
     router.push('/dashboard/products')
     router.refresh()
   }

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { ContactSubmission } from '@/lib/types/database'
 import { useDashboardSearch } from '@/lib/dashboard/useDashboardSearch'
 import DashboardSearchBox from '@/components/dashboard/DashboardSearchBox'
+import { logActivityAction } from '@/app/actions/activityLog'
 
 interface ContactClientProps {
   submissions: ContactSubmission[]
@@ -39,6 +40,12 @@ export default function ContactClient({ submissions: initial }: ContactClientPro
     if (!error) {
       setSubmissions((prev) => prev.map((s) => s.id === id ? { ...s, status } : s))
       if (selected?.id === id) setSelected((prev) => prev ? { ...prev, status } : null)
+      logActivityAction({
+        action: 'contact_status_updated',
+        targetType: 'contact_submission',
+        targetId: id,
+        details: { newStatus: status },
+      }).catch(() => {})
     }
     setUpdating(false)
   }

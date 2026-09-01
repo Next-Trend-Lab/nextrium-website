@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Header from '@/components/dashboard/Header'
+import { logActivityAction } from '@/app/actions/activityLog'
 
 const STATUS_OPTIONS = ['active', 'prototype', 'completed', 'abandoned']
 
@@ -67,12 +68,24 @@ export default function CommunityProjectEditor({ project }: { project: any }) {
         const { error: err } = await (supabase.from('community_projects') as any).insert({ ...payload, created_at: now })
         if (err) throw err
         setSuccess('Project created.')
+        logActivityAction({
+          action: 'community_project_created',
+          targetType: 'community_project',
+          targetId: payload.slug,
+          details: { name: payload.name },
+        }).catch(() => {})
         router.push(`/dashboard/community-projects/${payload.slug}`)
         router.refresh()
       } else {
         const { error: err } = await (supabase.from('community_projects') as any).update(payload).eq('slug', project.slug)
         if (err) throw err
         setSuccess('Project saved.')
+        logActivityAction({
+          action: 'community_project_updated',
+          targetType: 'community_project',
+          targetId: payload.slug,
+          details: { name: payload.name },
+        }).catch(() => {})
         router.refresh()
         if (slug !== project.slug) router.push(`/dashboard/community-projects/${payload.slug}`)
       }
@@ -90,6 +103,12 @@ export default function CommunityProjectEditor({ project }: { project: any }) {
     const supabase = createClient()
     const { error: err } = await supabase.from('community_projects').delete().eq('slug', project.slug)
     if (err) { setError(err.message); setDeleting(false); return }
+    logActivityAction({
+      action: 'community_project_deleted',
+      targetType: 'community_project',
+      targetId: project.slug,
+      details: { name: project.name },
+    }).catch(() => {})
     router.push('/dashboard/community-projects')
     router.refresh()
   }

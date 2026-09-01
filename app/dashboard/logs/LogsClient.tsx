@@ -26,6 +26,28 @@ const ACTION_LABELS: Record<string, string> = {
   team_user_invited: 'Invited team member',
   team_user_role_updated: 'Updated team member role',
   team_user_removed: 'Removed team member',
+  post_created: 'Created post',
+  post_updated: 'Updated post',
+  post_published: 'Published post',
+  post_deleted: 'Deleted post',
+  event_created: 'Created event',
+  event_updated: 'Updated event',
+  event_deleted: 'Deleted event',
+  product_created: 'Created product',
+  product_updated: 'Updated product',
+  product_deleted: 'Deleted product',
+  role_created: 'Created open role',
+  role_published: 'Published open role',
+  role_updated: 'Updated open role',
+  role_deleted: 'Deleted open role',
+  community_project_created: 'Created community project',
+  community_project_updated: 'Updated community project',
+  community_project_deleted: 'Deleted community project',
+  team_member_added: 'Added team member (public page)',
+  team_member_updated: 'Updated team member (public page)',
+  team_member_removed: 'Removed team member (public page)',
+  contact_status_updated: 'Updated contact status',
+  email_sent: 'Sent email',
 }
 
 const ACTION_COLORS: Record<string, string> = {
@@ -43,6 +65,28 @@ const ACTION_COLORS: Record<string, string> = {
   team_user_invited: 'var(--success)',
   team_user_role_updated: 'var(--slate)',
   team_user_removed: 'var(--error)',
+  post_created: 'var(--slate)',
+  post_updated: 'var(--slate)',
+  post_published: 'var(--success)',
+  post_deleted: 'var(--error)',
+  event_created: 'var(--slate)',
+  event_updated: 'var(--slate)',
+  event_deleted: 'var(--error)',
+  product_created: 'var(--slate)',
+  product_updated: 'var(--slate)',
+  product_deleted: 'var(--error)',
+  role_created: 'var(--slate)',
+  role_published: 'var(--success)',
+  role_updated: 'var(--slate)',
+  role_deleted: 'var(--error)',
+  community_project_created: 'var(--slate)',
+  community_project_updated: 'var(--slate)',
+  community_project_deleted: 'var(--error)',
+  team_member_added: 'var(--success)',
+  team_member_updated: 'var(--slate)',
+  team_member_removed: 'var(--error)',
+  contact_status_updated: 'var(--slate)',
+  email_sent: 'var(--orange)',
 }
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -87,6 +131,36 @@ function summarizeDetails(log: TeamActivityLog): string {
       return [d.email, d.role].filter(Boolean).join(' · ') || '—'
     case 'team_user_role_updated':
       return `→ ${d.newRole ?? '—'}`
+    case 'post_created':
+    case 'post_updated':
+    case 'post_published':
+    case 'post_deleted':
+      return (d.title as string) || '—'
+    case 'event_created':
+    case 'event_updated':
+    case 'event_deleted':
+      return (d.title as string) || '—'
+    case 'product_created':
+    case 'product_updated':
+    case 'product_deleted':
+      return (d.name as string) || '—'
+    case 'role_created':
+    case 'role_published':
+    case 'role_updated':
+    case 'role_deleted':
+      return (d.title as string) || '—'
+    case 'community_project_created':
+    case 'community_project_updated':
+    case 'community_project_deleted':
+      return (d.name as string) || '—'
+    case 'team_member_added':
+    case 'team_member_updated':
+    case 'team_member_removed':
+      return (d.name as string) || '—'
+    case 'contact_status_updated':
+      return `→ ${d.newStatus ?? '—'}`
+    case 'email_sent':
+      return [d.subject, d.recipientCount !== undefined ? `${d.recipientCount} recipient(s)` : null].filter(Boolean).join(' · ') || '—'
     default:
       return Object.keys(d).length > 0 ? JSON.stringify(d) : '—'
   }

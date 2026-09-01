@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import Header from '@/components/dashboard/Header'
 import CoverImageUpload from '@/components/dashboard/CoverImageUpload'
 import type { NTEvent } from '@/lib/types/database'
+import { logActivityAction } from '@/app/actions/activityLog'
 
 interface EventEditorProps {
   event: NTEvent | null
@@ -92,12 +93,24 @@ export default function EventEditor({ event }: EventEditorProps) {
         const { error: err } = await (supabase.from('events') as any).insert({ ...payload, created_at: now })
         if (err) throw err
         setSuccess('Event created.')
+        logActivityAction({
+          action: 'event_created',
+          targetType: 'event',
+          targetId: payload.slug,
+          details: { title: payload.title },
+        }).catch(() => {})
         router.push(`/dashboard/events/${payload.slug}`)
         router.refresh()
       } else {
         const { error: err } = await (supabase.from('events') as any).update(payload).eq('slug', event!.slug)
         if (err) throw err
         setSuccess('Event saved.')
+        logActivityAction({
+          action: 'event_updated',
+          targetType: 'event',
+          targetId: payload.slug,
+          details: { title: payload.title },
+        }).catch(() => {})
         router.refresh()
         if (slug !== event!.slug) router.push(`/dashboard/events/${payload.slug}`)
       }
@@ -115,6 +128,12 @@ export default function EventEditor({ event }: EventEditorProps) {
     const supabase = createClient()
     const { error: err } = await supabase.from('events').delete().eq('slug', event.slug)
     if (err) { setError(err.message); setDeleting(false); return }
+    logActivityAction({
+      action: 'event_deleted',
+      targetType: 'event',
+      targetId: event.slug,
+      details: { title: event.title },
+    }).catch(() => {})
     router.push('/dashboard/events')
     router.refresh()
   }

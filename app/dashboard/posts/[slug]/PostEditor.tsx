@@ -7,6 +7,7 @@ import Header from '@/components/dashboard/Header'
 import CoverImageUpload from '@/components/dashboard/CoverImageUpload'
 import RichTextEditor from '@/components/editor/RichTextEditor'
 import type { Post } from '@/lib/types/database'
+import { logActivityAction } from '@/app/actions/activityLog'
 
 interface PostEditorProps {
   post: Post | null
@@ -89,12 +90,24 @@ export default function PostEditor({ post }: PostEditorProps) {
         const { error: err } = await (supabase.from('posts') as any).insert({ ...payload, created_at: now })
         if (err) throw err
         setSuccess('Post created.')
+        logActivityAction({
+          action: publish ? 'post_published' : 'post_created',
+          targetType: 'post',
+          targetId: payload.slug,
+          details: { title: payload.title },
+        }).catch(() => {})
         router.push(`/dashboard/posts/${payload.slug}`)
         router.refresh()
       } else {
         const { error: err } = await (supabase.from('posts') as any).update(payload).eq('slug', post!.slug)
         if (err) throw err
         setSuccess(publish ? 'Post published.' : 'Draft saved.')
+        logActivityAction({
+          action: publish && !post!.is_published ? 'post_published' : 'post_updated',
+          targetType: 'post',
+          targetId: payload.slug,
+          details: { title: payload.title },
+        }).catch(() => {})
         router.refresh()
         if (slug !== post!.slug) router.push(`/dashboard/posts/${payload.slug}`)
       }
@@ -112,6 +125,12 @@ export default function PostEditor({ post }: PostEditorProps) {
     const supabase = createClient()
     const { error: err } = await supabase.from('posts').delete().eq('slug', post.slug)
     if (err) { setError(err.message); setDeleting(false); return }
+    logActivityAction({
+      action: 'post_deleted',
+      targetType: 'post',
+      targetId: post.slug,
+      details: { title: post.title },
+    }).catch(() => {})
     router.refresh()
     router.push('/dashboard/posts')
   }
