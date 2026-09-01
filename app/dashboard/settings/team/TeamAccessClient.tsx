@@ -12,12 +12,14 @@ interface DashboardUserRow {
 
 const ROLE_OPTIONS = [
   { value: 'admin',     label: 'Admin' },
+  { value: 'moderator', label: 'Moderator' },
   { value: 'content',   label: 'Content' },
   { value: 'community', label: 'Community' },
 ]
 
 const ROLE_STYLES: Record<string, { bg: string; color: string }> = {
   admin:     { bg: 'rgba(219,103,39,0.1)',  color: 'var(--orange)'  },
+  moderator: { bg: 'rgba(212,168,67,0.1)',  color: 'var(--gold)'    },
   content:   { bg: 'rgba(74,111,165,0.1)',  color: 'var(--slate)'   },
   community: { bg: 'rgba(34,193,122,0.1)',  color: 'var(--success)' },
 }

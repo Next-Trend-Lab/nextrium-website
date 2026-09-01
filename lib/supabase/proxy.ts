@@ -1,6 +1,14 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Bounds the auth check the same way the dashboard-role lookup in proxy.ts
+// already is — this was the one remaining unbounded await in the
+// middleware chain. Left unguarded, a slow/hanging Supabase auth response
+// here blocks every single /dashboard request, including the very first
+// navigation right after signing in, which can look like sign-in silently
+// never completing even though the session was actually created.
+const AUTH_QUERY_TIMEOUT_MS = 4000
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -25,7 +33,12 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const authPromise = supabase.auth.getUser()
+  const timeoutPromise = new Promise<{ data: { user: null } }>((resolve) =>
+    setTimeout(() => resolve({ data: { user: null } }), AUTH_QUERY_TIMEOUT_MS)
+  )
+
+  const { data: { user } } = await Promise.race([authPromise, timeoutPromise])
 
   return { response: supabaseResponse, user }
 }
