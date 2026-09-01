@@ -68,15 +68,27 @@ async function getScreeningResults(): Promise<Record<string, AgentScreeningResul
 async function getRebuttalStatuses(): Promise<Record<string, { reportId: string; rebuttalSubmitted: boolean; rebuttalLocked: boolean }>> {
   const supabase = createServiceClient()
   const { data, error } = await (supabase.from('screening_reports') as any)
-    .select('id, application_id, rebuttal_submitted, rebuttal_locked')
+    .select('id, application_id, rebuttal_submitted, rebuttal_locked, created_at')
+    .order('created_at', { ascending: false })
 
   if (error) {
     console.warn('[ApplicationsPage] Could not fetch screening reports:', error.message)
     return {}
   }
 
+  // An application can have more than one screening_reports row (a
+  // candidate rescreened after a report ID drift used to insert a second
+  // row instead of updating the first — see generateReportId in
+  // agents-engine, fixed separately). Rows are ordered newest-first, so the
+  // newest one wins by default (the usual, correct case) — except if the
+  // newest row has no rebuttal but an older one does, in which case the
+  // older, rebuttal-bearing row's id is what a rebuttal-detail lookup will
+  // actually find a match against, so it takes priority.
   const map: Record<string, { reportId: string; rebuttalSubmitted: boolean; rebuttalLocked: boolean }> = {}
   ;(data as ScreeningReport[] ?? []).forEach((row) => {
+    const existing = map[row.application_id]
+    if (existing && !(!existing.rebuttalSubmitted && row.rebuttal_submitted)) return
+
     map[row.application_id] = {
       reportId:          row.id,
       rebuttalSubmitted: row.rebuttal_submitted,

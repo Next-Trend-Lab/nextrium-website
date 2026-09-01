@@ -227,10 +227,16 @@ export interface RebuttalDetail {
 export async function getRebuttalDetail(reportId: string): Promise<{ rebuttal?: RebuttalDetail; error?: string }> {
   try {
     const supabase = createServiceClient()
+    // screening_rebuttals' actual timestamp column is submitted_at, not
+    // created_at (the live schema drifted from what supabase/schema.sql
+    // documents) — ordering by created_at here made this query fail
+    // outright every time, which is why a candidate with a genuinely
+    // submitted rebuttal showed the "submitted" badge but the rebuttal
+    // panel itself never rendered any content.
     const { data, error } = await (supabase.from('screening_rebuttals') as any)
       .select('*')
       .eq('report_id', reportId)
-      .order('created_at', { ascending: false })
+      .order('submitted_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
@@ -250,7 +256,7 @@ export async function getRebuttalDetail(reportId: string): Promise<{ rebuttal?: 
         newScore: data.new_score ?? null,
         deltaSummary: data.delta_summary ?? null,
         rescreenError: data.rescreen_error ?? null,
-        createdAt: data.created_at,
+        createdAt: data.submitted_at,
       },
     }
   } catch (err) {

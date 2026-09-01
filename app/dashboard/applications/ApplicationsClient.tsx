@@ -500,9 +500,17 @@ export default function ApplicationsClient({
   const selectedConsensus = selectedScreening ? ((selectedScreening.full_result as any)?.consensus || selectedScreening.full_result) : null
   const selectedLayer2    = selectedConsensus?.layer2ArtifactScorecard ?? null
   const selectedArtifacts = selectedConsensus?.inspectedArtifacts ?? null
-  const selectedReportId  = selectedConsensus?.publicFeedbackReport?.reportId ?? rebuttalStatuses[selected?.id ?? '']?.reportId ?? null
-  const selectedReportUrl = selectedReportId ? `https://www.nextrium.org/feedback/${selectedReportId}` : null
   const selectedRebuttal  = selected ? rebuttalStatuses[selected.id] : null
+  // When a rebuttal exists, its report id (already resolved to whichever
+  // duplicate row actually carries the rebuttal — see getRebuttalStatuses
+  // in page.tsx) takes priority over the latest live screening result's
+  // report id, which can point at a newer, unrelated report row if this
+  // candidate was rescreened after the rebuttal was filed.
+  const selectedReportId  = (selectedRebuttal?.rebuttalSubmitted && selectedRebuttal.reportId)
+    || selectedConsensus?.publicFeedbackReport?.reportId
+    || selectedRebuttal?.reportId
+    || null
+  const selectedReportUrl = selectedReportId ? `https://www.nextrium.org/feedback/${selectedReportId}` : null
 
   const batchQueueIndex = selected ? batchTargetIds.indexOf(selected.id) : -1
   const batchCompletedCount = batchProgress?.current ?? 0
