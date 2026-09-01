@@ -9,6 +9,14 @@ export interface CopilotTarget {
   candidateName?: string
   /** Optional seed prompt/context shown when the drawer opens, e.g. from a "Refine" action. */
   initialPrompt?: string
+  /**
+   * Called after the drawer successfully applies a chat delta. The drawer
+   * is mounted once globally with no link back to whichever list/panel
+   * opened it - without this, a delta applied through the chat has no way
+   * to reach the Applications list's own score/tier badge, which just
+   * keeps showing whatever it last loaded.
+   */
+  onDelta?: () => void
 }
 
 interface DashboardContextType {

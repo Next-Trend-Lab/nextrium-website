@@ -96,6 +96,11 @@ export default function CopilotDrawer() {
         created_at: new Date().toISOString(),
       },
     ])
+
+    if (typeof result.delta?.scoreDelta === 'number') {
+      copilotTarget.onDelta?.()
+    }
+
     setPrompt('')
     setPastedText('')
     setUrlInput('')

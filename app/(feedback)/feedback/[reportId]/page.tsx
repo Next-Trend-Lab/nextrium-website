@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { notFound }     from 'next/navigation'
 import ReportClient     from './ReportClient'
 
@@ -27,6 +27,24 @@ export default async function ReportPage({ params }: Props) {
     .single()
 
   if (error || !report) notFound()
+  const reportData = report as any
 
-  return <ReportClient report={report as any} />
+  // screening_rebuttals is service_role-only (no public RLS policy), so
+  // this candidate-facing page can't read it via the anon client above -
+  // fetch just the status here, server-side, so the "under review" copy
+  // can actually reflect what's happened instead of a static message
+  // that never changes once a rebuttal is filed.
+  let rebuttalStatus: string | null = null
+  if (reportData.rebuttal_submitted) {
+    const serviceClient = createServiceClient()
+    const { data: rebuttal } = await (serviceClient.from('screening_rebuttals') as any)
+      .select('status')
+      .eq('report_id', reportData.id)
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    rebuttalStatus = rebuttal?.status ?? null
+  }
+
+  return <ReportClient report={reportData} rebuttalStatus={rebuttalStatus} />
 }

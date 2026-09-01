@@ -639,6 +639,18 @@ export default function ApplicationsClient({
     }
   }
 
+  // Refreshes one candidate's row in screeningResults from the database -
+  // shared by anything that can change a candidate's score/tier out from
+  // under the list (rebuttal resolution, a Co-Pilot chat delta) so the
+  // list's badge doesn't keep showing whatever it last loaded.
+  function refreshScreeningResult(id: string) {
+    getScreeningResultsForApplications([id]).then((records) => {
+      if (records[id]) {
+        setScreeningResults((prev) => ({ ...prev, [id]: records[id] }))
+      }
+    })
+  }
+
   function toggleSelectedId(id: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev)
@@ -1203,6 +1215,7 @@ export default function ApplicationsClient({
                                 resourceId: selected.id,
                                 reportId: selectedReportId,
                                 candidateName: selected.name,
+                                onDelta: () => refreshScreeningResult(selected.id),
                               })
                             }
                             className="rescan-btn"
@@ -1308,13 +1321,7 @@ export default function ApplicationsClient({
                             reportId={selectedReportId}
                             applicationId={selected.id}
                             candidateName={selected.name}
-                            onResolved={() => {
-                              getScreeningResultsForApplications([selected.id]).then((records) => {
-                                if (records[selected.id]) {
-                                  setScreeningResults((prev) => ({ ...prev, [selected.id]: records[selected.id] }))
-                                }
-                              })
-                            }}
+                            onResolved={() => refreshScreeningResult(selected.id)}
                           />
                         )}
 

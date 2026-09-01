@@ -104,6 +104,7 @@ export default function RebuttalPanel({
         reportId,
         candidateName,
         initialPrompt: `Continuing the evidence review for ${candidateName}'s rebuttal — additional context:`,
+        onDelta: onResolved,
       })
     }
 
