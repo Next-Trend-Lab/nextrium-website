@@ -8,11 +8,11 @@ import type { Post, Application } from '@/lib/types/database'
 async function getStats(role: DashboardRole) {
   const supabase = createServiceClient()
 
-  const canSeeProducts     = role === 'admin' || role === 'content'
-  const canSeePosts        = role === 'admin' || role === 'content'
+  const canSeeProducts     = role === 'admin' || role === 'content' || role === 'moderator'
+  const canSeePosts        = role === 'admin' || role === 'content' || role === 'moderator'
   const canSeeEvents       = true
-  const canSeeApplications = role === 'admin'
-  const canSeeContacts     = role === 'admin'
+  const canSeeApplications = role === 'admin' || role === 'moderator'
+  const canSeeContacts     = role === 'admin' || role === 'moderator'
 
   const [products, posts, events, applications, contacts] = await Promise.all([
     canSeeProducts     ? supabase.from('products').select('id', { count: 'exact', head: true }) : null,
@@ -31,7 +31,7 @@ async function getStats(role: DashboardRole) {
 }
 
 async function getRecentPosts(role: DashboardRole): Promise<Pick<Post, 'slug' | 'title' | 'post_type' | 'published_at' | 'is_published'>[]> {
-  if (role !== 'admin' && role !== 'content') return []
+  if (role !== 'admin' && role !== 'content' && role !== 'moderator') return []
 
   const supabase = createServiceClient()
   const { data } = await supabase
@@ -43,7 +43,7 @@ async function getRecentPosts(role: DashboardRole): Promise<Pick<Post, 'slug' | 
 }
 
 async function getRecentApplications(role: DashboardRole): Promise<Pick<Application, 'id' | 'name' | 'email' | 'role_title' | 'status' | 'created_at'>[]> {
-  if (role !== 'admin') return []
+  if (role !== 'admin' && role !== 'moderator') return []
 
   const supabase = createServiceClient()
   const { data } = await supabase
@@ -67,11 +67,11 @@ export default async function DashboardPage() {
     getRecentApplications(role),
   ])
 
-  const canSeeProducts     = role === 'admin' || role === 'content'
-  const canSeePosts        = role === 'admin' || role === 'content'
-  const canSeeApplications = role === 'admin'
-  const canSeeContacts     = role === 'admin'
-  const canSeeRoles        = role === 'admin'
+  const canSeeProducts     = role === 'admin' || role === 'content' || role === 'moderator'
+  const canSeePosts        = role === 'admin' || role === 'content' || role === 'moderator'
+  const canSeeApplications = role === 'admin' || role === 'moderator'
+  const canSeeContacts     = role === 'admin' || role === 'moderator'
+  const canSeeRoles        = role === 'admin' || role === 'moderator'
 
   const STAT_CARDS = [
     canSeeProducts     && { label: 'Products',        value: stats.products,     href: '/dashboard/products',     accent: '#0A8B8B' },

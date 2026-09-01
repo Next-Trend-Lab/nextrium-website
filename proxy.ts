@@ -22,6 +22,12 @@ const BLOCKED_PATHS: Record<string, string[]> = {
     '/dashboard/posts',
     '/dashboard/products',
   ],
+  // Full access except the two pages that would let a moderator change
+  // their own (or anyone's) access level, or see internal processing logs.
+  moderator: [
+    '/dashboard/settings/team',
+    '/dashboard/logs',
+  ],
 }
 
 function isRestricted(pathname: string, role: string): boolean {
@@ -30,7 +36,11 @@ function isRestricted(pathname: string, role: string): boolean {
 }
 
 const ROLE_COOKIE = 'nextrium-role'
-const ROLE_COOKIE_MAX_AGE = 300 // 5 minutes — bounds how stale a cached role can get
+// 30s: short enough that a role change (e.g. promoting/demoting someone in
+// Team Access) takes effect on their next couple of page loads instead of
+// up to 5 minutes, while still absorbing the request-per-poll load this
+// cache exists for in the first place.
+const ROLE_COOKIE_MAX_AGE = 30
 const ROLE_QUERY_TIMEOUT_MS = 4000 // never let one slow Supabase response hang the whole middleware
 
 async function fetchUserRole(userId: string): Promise<string> {

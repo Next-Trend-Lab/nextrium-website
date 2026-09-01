@@ -477,20 +477,20 @@ export type Database = {
         Row: {
           id: string
           user_id: string
-          role: 'admin' | 'content' | 'community'
+          role: 'admin' | 'content' | 'community' | 'moderator'
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          role?: 'admin' | 'content' | 'community'
+          role?: 'admin' | 'content' | 'community' | 'moderator'
           created_at?: string
           updated_at?: string
         }
         Update: {
           user_id?: string
-          role?: 'admin' | 'content' | 'community'
+          role?: 'admin' | 'content' | 'community' | 'moderator'
           updated_at?: string
         }
       }
