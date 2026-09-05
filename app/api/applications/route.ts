@@ -74,8 +74,26 @@ export async function POST(request: Request) {
     const supabase = createServiceClient()
 
     if (role_id) {
-      const { data: role } = await supabase.from('roles').select('title').eq('slug', role_id).single()
-      if (role && 'title' in role) role_title = (role as { title: string }).title
+      const { data: role } = await supabase
+        .from('roles')
+        .select('title, is_active, closes_at')
+        .eq('slug', role_id)
+        .single()
+
+      if (!role) {
+        return NextResponse.json({ error: 'This role could not be found.' }, { status: 404 })
+      }
+
+      const { title, is_active, closes_at } = role as { title: string; is_active: boolean; closes_at: string | null }
+
+      if (!is_active) {
+        return NextResponse.json({ error: 'This role is no longer accepting applications.' }, { status: 410 })
+      }
+      if (closes_at && new Date(closes_at) < new Date()) {
+        return NextResponse.json({ error: 'This role is no longer accepting applications.' }, { status: 410 })
+      }
+
+      role_title = title
     }
 
     const { data: existing } = await supabase
