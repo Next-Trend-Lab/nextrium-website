@@ -16,8 +16,9 @@ const APPLICATIONS_SUB_ITEMS = [
   { label: 'Reviewed',    status: 'reviewed' },
   { label: 'Shortlisted', status: 'shortlisted' },
   { label: 'Accepted',    status: 'accepted' },
-  { label: 'Rejected',    status: 'rejected' },
-  { label: 'Rebuttals',   status: 'rebuttal' },
+  { label: 'Rejected',       status: 'rejected' },
+  { label: 'Rebuttals',      status: 'rebuttal' },
+  { label: 'Human Reviewed', status: 'human-reviewed' },
 ]
 
 const ALL_NAV_GROUPS = [
