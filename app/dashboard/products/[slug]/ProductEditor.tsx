@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 import Header from '@/components/dashboard/Header'
 import CoverImageUpload from '@/components/dashboard/CoverImageUpload'
 import type { Product } from '@/lib/types/database'
@@ -66,9 +67,9 @@ export default function ProductEditor({ product }: ProductEditorProps) {
       category:        category.split(',').map((s) => s.trim()).filter(Boolean),
       tech_stack:      techStack.split(',').map((s) => s.trim()).filter(Boolean),
       body_color:      bodyColor,
-      website_url:     websiteUrl.trim()  || null,
-      github_url:      githubUrl.trim()   || null,
-      cover_image_url: coverImage.trim()  || null,
+      website_url:     normalizeUrl(websiteUrl)  || null,
+      github_url:      normalizeUrl(githubUrl)   || null,
+      cover_image_url: normalizeUrl(coverImage)  || null,
       is_featured:     isFeatured,
       sort_order:      Number(sortOrder),
       updated_at:      now,

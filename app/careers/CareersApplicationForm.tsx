@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { normalizeUrl, isValidUrl } from '@/lib/normalizeUrl'
 
 type FormState = 'idle' | 'submitting' | 'success' | 'error'
 
@@ -98,6 +99,22 @@ export default function CareersApplicationForm({
       if (!data.location.trim()) e.location = 'Location is required.'
       if (!roleId && !data.role_title.trim()) e.role_title = 'Please tell us what you do.'
     }
+    if (s === 2) {
+      const urlFields: [keyof FormData, string][] = [
+        ['linkedin_url',       'LinkedIn link'],
+        ['portfolio_url',      'Portfolio link'],
+        ['github_url',         'GitHub link'],
+        ['design_url',         'Design portfolio link'],
+        ['published_work_url', 'Published work link'],
+      ]
+      for (const [field, label] of urlFields) {
+        const raw = data[field] as string
+        if (raw.trim() && !isValidUrl(raw)) e[field] = `${label} doesn't look like a valid URL.`
+      }
+      data.project_links.forEach((link, i) => {
+        if (link.url.trim() && !isValidUrl(link.url)) e[`project_link_${i}`] = 'This project link doesn’t look like a valid URL.'
+      })
+    }
     if (s === 3) {
       if (!data.cover_note.trim())        e.cover_note        = 'Please tell us why NexTrium.'
       if (!data.currently_building.trim()) e.currently_building = 'Please tell us what you are learning or building.'
@@ -142,15 +159,15 @@ export default function CareersApplicationForm({
     fd.append('phone',              data.phone)
     fd.append('location',           data.location)
     fd.append('role_title',         data.role_title || roleId || '')
-    fd.append('linkedin_url',       data.linkedin_url)
-    fd.append('portfolio_url',      data.portfolio_url)
-    fd.append('github_url',         data.github_url)
-    fd.append('design_url',         data.design_url)
-    fd.append('published_work_url', data.published_work_url)
+    fd.append('linkedin_url',       normalizeUrl(data.linkedin_url))
+    fd.append('portfolio_url',      normalizeUrl(data.portfolio_url))
+    fd.append('github_url',         normalizeUrl(data.github_url))
+    fd.append('design_url',         normalizeUrl(data.design_url))
+    fd.append('published_work_url', normalizeUrl(data.published_work_url))
     fd.append('cover_note',         data.cover_note)
     fd.append('currently_building', data.currently_building)
     data.project_links.filter((l) => l.url.trim()).forEach((l, i) => {
-      fd.append(`project_link_${i + 1}_url`,  l.url)
+      fd.append(`project_link_${i + 1}_url`,  normalizeUrl(l.url))
       fd.append(`project_link_${i + 1}_desc`, l.description)
     })
     if (data.cv) fd.append('cv', data.cv)
@@ -340,28 +357,33 @@ export default function CareersApplicationForm({
                         <div className="form-group">
                           <label className="form-label" htmlFor="linkedin_url">LinkedIn <span className="form-label-optional">optional</span></label>
                           <input className="form-input" id="linkedin_url" type="url" placeholder="https://linkedin.com/in/..." value={data.linkedin_url} onChange={(e) => set('linkedin_url', e.target.value)} />
+                          {errors.linkedin_url && <span className="form-error">{errors.linkedin_url}</span>}
                         </div>
                         <div className="form-group">
                           <label className="form-label" htmlFor="portfolio_url">Portfolio or website <span className="form-label-optional">optional</span></label>
                           <input className="form-input" id="portfolio_url" type="url" placeholder="https://yoursite.com" value={data.portfolio_url} onChange={(e) => set('portfolio_url', e.target.value)} />
+                          {errors.portfolio_url && <span className="form-error">{errors.portfolio_url}</span>}
                         </div>
                       </div>
                       {isEngineering && (
                         <div className="form-group">
                           <label className="form-label" htmlFor="github_url">GitHub profile <span className="form-label-optional">optional</span></label>
                           <input className="form-input" id="github_url" type="url" placeholder="https://github.com/yourusername" value={data.github_url} onChange={(e) => set('github_url', e.target.value)} />
+                          {errors.github_url && <span className="form-error">{errors.github_url}</span>}
                         </div>
                       )}
                       {isDesign && (
                         <div className="form-group">
                           <label className="form-label" htmlFor="design_url">Behance, Dribbble, or Figma <span className="form-label-optional">optional</span></label>
                           <input className="form-input" id="design_url" type="url" placeholder="https://behance.net/..." value={data.design_url} onChange={(e) => set('design_url', e.target.value)} />
+                          {errors.design_url && <span className="form-error">{errors.design_url}</span>}
                         </div>
                       )}
                       {isResearch && (
                         <div className="form-group">
                           <label className="form-label" htmlFor="published_work_url">Link to published work <span className="form-label-optional">optional</span></label>
                           <input className="form-input" id="published_work_url" type="url" placeholder="Article, report, paper, or blog post" value={data.published_work_url} onChange={(e) => set('published_work_url', e.target.value)} />
+                          {errors.published_work_url && <span className="form-error">{errors.published_work_url}</span>}
                         </div>
                       )}
                       <div className="form-group">
@@ -375,6 +397,7 @@ export default function CareersApplicationForm({
                               )}
                             </div>
                             <input className="form-input" type="url" placeholder="https://github.com/... or https://project.com" value={link.url} onChange={(e) => updateProjectLink(i, 'url', e.target.value)} />
+                            {errors[`project_link_${i}`] && <span className="form-error">{errors[`project_link_${i}`]}</span>}
                             <input className="form-input" type="text" placeholder="Brief description of what this is and your role in it" value={link.description} onChange={(e) => updateProjectLink(i, 'description', e.target.value)} />
                           </div>
                         ))}

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import NTMark from '@/components/shared/NTMark'
 import SectionTag from '@/components/shared/SectionTag'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 import type { Product } from '@/lib/types/database'
 
 type FilterStatus = 'all' | Product['status']
@@ -155,10 +156,10 @@ export default function ProductsClient({ products }: ProductsClientProps) {
                   <div className="product-footer">
                     <div className="product-links">
                       {product.website_url && (
-                        <a href={product.website_url} className="product-link" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>Website ↗</a>
+                        <a href={normalizeUrl(product.website_url)} className="product-link" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>Website ↗</a>
                       )}
                       {product.github_url && (
-                        <a href={product.github_url} className="product-link" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>GitHub ↗</a>
+                        <a href={normalizeUrl(product.github_url)} className="product-link" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>GitHub ↗</a>
                       )}
                     </div>
                     <span className="product-arrow">↗</span>

@@ -6,6 +6,7 @@ import NTMark from '@/components/shared/NTMark'
 import SectionTag from '@/components/shared/SectionTag'
 import CTABox from '@/components/ui/CTABox'
 import { createClient } from '@/lib/supabase/server'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 import type { Product } from '@/lib/types/database'
 
 interface Props {
@@ -128,12 +129,12 @@ export default async function ProductPage({ params }: Props) {
               <p className="product-tagline">{product.tagline}</p>
               <div className="product-links">
                 {product.website_url && (
-                  <a href={product.website_url} className="product-link-btn" target="_blank" rel="noopener noreferrer">
+                  <a href={normalizeUrl(product.website_url)} className="product-link-btn" target="_blank" rel="noopener noreferrer">
                     <span>Visit website</span><span>↗</span>
                   </a>
                 )}
                 {product.github_url && (
-                  <a href={product.github_url} className="product-link-btn" target="_blank" rel="noopener noreferrer">
+                  <a href={normalizeUrl(product.github_url)} className="product-link-btn" target="_blank" rel="noopener noreferrer">
                     <span>View on GitHub</span><span>↗</span>
                   </a>
                 )}
@@ -176,7 +177,7 @@ export default async function ProductPage({ params }: Props) {
                 {product.website_url && (
                   <div className="product-meta-row">
                     <span className="product-meta-label">Website</span>
-                    <a href={product.website_url} className="product-meta-value" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--orange)' }}>
+                    <a href={normalizeUrl(product.website_url)} className="product-meta-value" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--orange)' }}>
                       {product.website_url.replace('https://', '')}
                     </a>
                   </div>
@@ -184,7 +185,7 @@ export default async function ProductPage({ params }: Props) {
                 {product.github_url && (
                   <div className="product-meta-row">
                     <span className="product-meta-label">GitHub</span>
-                    <a href={product.github_url} className="product-meta-value" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--orange)' }}>
+                    <a href={normalizeUrl(product.github_url)} className="product-meta-value" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--orange)' }}>
                       {product.github_url.replace('https://github.com/', '')}
                     </a>
                   </div>

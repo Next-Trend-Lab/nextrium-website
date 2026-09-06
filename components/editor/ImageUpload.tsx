@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 
 interface ImageUploadProps {
   onInsert: (url: string) => void
@@ -58,7 +59,7 @@ export default function ImageUpload({ onInsert, onClose }: ImageUploadProps) {
 
   const handleUrlInsert = useCallback(() => {
     if (!urlInput.trim()) return
-    onInsert(urlInput.trim())
+    onInsert(normalizeUrl(urlInput))
   }, [urlInput, onInsert])
 
   return (

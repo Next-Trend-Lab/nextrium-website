@@ -3,6 +3,7 @@ import Footer from '@/components/public/Footer'
 import SectionTag from '@/components/shared/SectionTag'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 import type { TeamMember } from '@/lib/types/database'
 
 export const metadata = {
@@ -123,13 +124,13 @@ export default async function TeamPage() {
                     )}
                     <div className="member-card-links">
                       {member.github_url && (
-                        <a href={member.github_url} target="_blank" rel="noopener noreferrer" className="member-card-link">GitHub ↗</a>
+                        <a href={normalizeUrl(member.github_url)} target="_blank" rel="noopener noreferrer" className="member-card-link">GitHub ↗</a>
                       )}
                       {member.linkedin_url && (
-                        <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer" className="member-card-link">LinkedIn ↗</a>
+                        <a href={normalizeUrl(member.linkedin_url)} target="_blank" rel="noopener noreferrer" className="member-card-link">LinkedIn ↗</a>
                       )}
                       {member.twitter_url && (
-                        <a href={member.twitter_url} target="_blank" rel="noopener noreferrer" className="member-card-link">X ↗</a>
+                        <a href={normalizeUrl(member.twitter_url)} target="_blank" rel="noopener noreferrer" className="member-card-link">X ↗</a>
                       )}
                       {member.email && (
                         <a href={`mailto:${member.email}`} className="member-card-link member-card-link-email">Email ↗</a>
