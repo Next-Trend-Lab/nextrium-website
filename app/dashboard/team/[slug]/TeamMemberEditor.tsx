@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 import Header from '@/components/dashboard/Header'
 import CoverImageUpload from '@/components/dashboard/CoverImageUpload'
 import type { TeamMember } from '@/lib/types/database'
@@ -51,11 +52,11 @@ export default function TeamMemberEditor({ member }: { member: TeamMember | null
       role:         role.trim(),
       bio:          bio.trim()         || null,
       detail:       detail.trim()      || null,
-      photo_url:    photoUrl.trim()    || null,
+      photo_url:    normalizeUrl(photoUrl)    || null,
       email:        email.trim()       || null,
-      github_url:   githubUrl.trim()   || null,
-      linkedin_url: linkedinUrl.trim() || null,
-      twitter_url:  twitterUrl.trim()  || null,
+      github_url:   normalizeUrl(githubUrl)   || null,
+      linkedin_url: normalizeUrl(linkedinUrl) || null,
+      twitter_url:  normalizeUrl(twitterUrl)  || null,
       is_active:    isActive,
       sort_order:   Number(sortOrder),
       updated_at:   now,

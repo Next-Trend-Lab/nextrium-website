@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 
 export async function POST(request: Request) {
   try {
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
         const url  = formData.get(`project_link_${i}_url`)  as string | null
         const desc = formData.get(`project_link_${i}_desc`) as string | null
         if (url && url.trim()) {
-          project_links.push({ url: url.trim(), description: desc?.trim() ?? '' })
+          project_links.push({ url: normalizeUrl(url), description: desc?.trim() ?? '' })
         }
       }
 
@@ -120,11 +121,11 @@ export async function POST(request: Request) {
       cv_url:              cv_url     || null,
       phone:               phone.trim()               || null,
       location:            location.trim()             || null,
-      linkedin_url:        linkedin_url.trim()         || null,
-      portfolio_url:       portfolio_url.trim()        || null,
-      github_url:          github_url.trim()           || null,
-      design_url:          design_url.trim()           || null,
-      published_work_url:  published_work_url.trim()   || null,
+      linkedin_url:        normalizeUrl(linkedin_url)         || null,
+      portfolio_url:       normalizeUrl(portfolio_url)        || null,
+      github_url:          normalizeUrl(github_url)           || null,
+      design_url:          normalizeUrl(design_url)           || null,
+      published_work_url:  normalizeUrl(published_work_url)   || null,
       currently_building:  currently_building.trim()   || null,
       project_links:       project_links.length > 0 ? project_links : null,
       status:              'pending',

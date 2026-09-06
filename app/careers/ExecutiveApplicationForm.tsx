@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { normalizeUrl, isValidUrl } from '@/lib/normalizeUrl'
 
 type FormState = 'idle' | 'submitting' | 'success' | 'error'
 
@@ -12,14 +13,35 @@ export default function ExecutiveApplicationForm({
   roleSlug: string
 }) {
   const [formState, setFormState] = useState<FormState>('idle')
+  const [submitError, setSubmitError] = useState('')
   const isCTO = roleSlug === 'chief-technology-officer'
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setFormState('submitting')
 
     const form     = e.currentTarget
     const formData = new FormData(form)
+
+    const linkedinRaw = String(formData.get('linkedin_url') ?? '')
+    const githubRaw    = String(formData.get('github_url') ?? '')
+
+    if (linkedinRaw.trim() && !isValidUrl(linkedinRaw)) {
+      setSubmitError('LinkedIn link doesn’t look like a valid URL.')
+      setFormState('error')
+      return
+    }
+    if (githubRaw.trim() && !isValidUrl(githubRaw)) {
+      setSubmitError('GitHub link doesn’t look like a valid URL.')
+      setFormState('error')
+      return
+    }
+
+    formData.set('linkedin_url', normalizeUrl(linkedinRaw))
+    if (githubRaw.trim()) formData.set('github_url', normalizeUrl(githubRaw))
+
+    setSubmitError('')
+    setFormState('submitting')
+
     formData.append('role_id', roleId)
     formData.append('application_type', 'executive')
 
@@ -28,7 +50,8 @@ export default function ExecutiveApplicationForm({
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Something went wrong.')
       setFormState('success')
-    } catch {
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : '')
       setFormState('error')
     }
   }
@@ -72,7 +95,7 @@ export default function ExecutiveApplicationForm({
       ) : (
         <form className="exec-form" onSubmit={handleSubmit} noValidate>
           {formState === 'error' && (
-            <div className="exec-error">Something went wrong. Please try again.</div>
+            <div className="exec-error">{submitError || 'Something went wrong. Please try again.'}</div>
           )}
 
           <div className="exec-form-row">

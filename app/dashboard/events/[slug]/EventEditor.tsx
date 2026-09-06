@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 import Header from '@/components/dashboard/Header'
 import CoverImageUpload from '@/components/dashboard/CoverImageUpload'
 import type { NTEvent } from '@/lib/types/database'
@@ -80,11 +81,11 @@ export default function EventEditor({ event }: EventEditorProps) {
       location:        location.trim(),
       is_hub_event:    isHubEvent,
       cover_color:     coverColor,
-      cover_image_url: coverImage.trim() || null,
+      cover_image_url: normalizeUrl(coverImage) || null,
       gallery,
-      youtube_url:      youtubeUrl.trim() || null,
-      registration_url: registrationUrl.trim() || null,
-      social_links:     socialLinks.split('\n').map((s) => s.trim()).filter(Boolean),
+      youtube_url:      normalizeUrl(youtubeUrl) || null,
+      registration_url: normalizeUrl(registrationUrl) || null,
+      social_links:     socialLinks.split('\n').map((s) => s.trim()).filter(Boolean).map(normalizeUrl),
       updated_at:       now,
     }
 

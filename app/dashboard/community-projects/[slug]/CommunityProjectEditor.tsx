@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 import Header from '@/components/dashboard/Header'
 import { logActivityAction } from '@/app/actions/activityLog'
 
@@ -55,8 +56,8 @@ export default function CommunityProjectEditor({ project }: { project: any }) {
       description: description.trim(),
       tags:        tags.split(',').map((t: string) => t.trim()).filter(Boolean),
       status,
-      website_url: websiteUrl.trim() || null,
-      github_url:  githubUrl.trim()  || null,
+      website_url: normalizeUrl(websiteUrl) || null,
+      github_url:  normalizeUrl(githubUrl)  || null,
       cover_color: coverColor,
       is_featured: isFeatured,
       sort_order:  Number(sortOrder),

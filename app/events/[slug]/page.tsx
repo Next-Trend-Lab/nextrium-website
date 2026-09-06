@@ -5,6 +5,7 @@ import Footer from '@/components/public/Footer'
 import SectionTag from '@/components/shared/SectionTag'
 import CTABox from '@/components/ui/CTABox'
 import { createClient } from '@/lib/supabase/server'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 import type { NTEvent } from '@/lib/types/database'
 
 interface Props {
@@ -274,7 +275,7 @@ export default async function EventPage({ params }: Props) {
               </div>
 
               {event.registration_url && (
-                <a href={event.registration_url} className="event-register-btn" target="_blank" rel="noopener noreferrer">
+                <a href={normalizeUrl(event.registration_url)} className="event-register-btn" target="_blank" rel="noopener noreferrer">
                   <span>Register now</span><span>↗</span>
                 </a>
               )}
@@ -284,9 +285,10 @@ export default async function EventPage({ params }: Props) {
                   <div className="event-sidebar-title">Follow this event</div>
                   <div className="event-social-links">
                     {event.social_links.map((url) => {
-                      const domain = url.replace('https://', '').replace('http://', '').split('/')[0]
+                      const normalized = normalizeUrl(url)
+                      const domain = normalized.replace('https://', '').replace('http://', '').split('/')[0]
                       return (
-                        <a key={url} href={url} className="event-social-link" target="_blank" rel="noopener noreferrer">
+                        <a key={url} href={normalized} className="event-social-link" target="_blank" rel="noopener noreferrer">
                           <span>{domain}</span><span>↗</span>
                         </a>
                       )

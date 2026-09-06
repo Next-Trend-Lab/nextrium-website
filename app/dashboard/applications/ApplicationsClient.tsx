@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 import type { Application, AgentScreeningResult } from '@/lib/types/database'
 import { useDashboardSearch } from '@/lib/dashboard/useDashboardSearch'
 import DashboardSearchBox from '@/components/dashboard/DashboardSearchBox'
@@ -1709,19 +1710,19 @@ export default function ApplicationsClient({
                       <div className="detail-section-title">Links</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         {(selected as any).linkedin_url && (
-                          <a href={(selected as any).linkedin_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>LinkedIn ↗</a>
+                          <a href={normalizeUrl((selected as any).linkedin_url)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>LinkedIn ↗</a>
                         )}
                         {(selected as any).portfolio_url && (
-                          <a href={(selected as any).portfolio_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>Portfolio ↗</a>
+                          <a href={normalizeUrl((selected as any).portfolio_url)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>Portfolio ↗</a>
                         )}
                         {(selected as any).github_url && (
-                          <a href={(selected as any).github_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>GitHub ↗</a>
+                          <a href={normalizeUrl((selected as any).github_url)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>GitHub ↗</a>
                         )}
                         {(selected as any).design_url && (
-                          <a href={(selected as any).design_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>Design portfolio ↗</a>
+                          <a href={normalizeUrl((selected as any).design_url)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>Design portfolio ↗</a>
                         )}
                         {(selected as any).published_work_url && (
-                          <a href={(selected as any).published_work_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>Published work ↗</a>
+                          <a href={normalizeUrl((selected as any).published_work_url)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)' }}>Published work ↗</a>
                         )}
                       </div>
                     </div>
@@ -1733,7 +1734,7 @@ export default function ApplicationsClient({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {((selected as any).project_links as { url: string; description: string }[]).map((link, i) => (
                           <div key={i} style={{ padding: '10px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)', display: 'block', marginBottom: '4px' }}>{link.url} ↗</a>
+                            <a href={normalizeUrl(link.url)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--orange)', display: 'block', marginBottom: '4px' }}>{link.url} ↗</a>
                             {link.description && <div style={{ fontSize: '12px', color: 'var(--grey-mid)' }}>{link.description}</div>}
                           </div>
                         ))}

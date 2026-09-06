@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Header from '@/components/dashboard/Header'
 import CoverImageUpload from '@/components/dashboard/CoverImageUpload'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 import RichTextEditor from '@/components/editor/RichTextEditor'
 import type { Post } from '@/lib/types/database'
 import { logActivityAction } from '@/app/actions/activityLog'
@@ -80,7 +81,7 @@ export default function PostEditor({ post }: PostEditorProps) {
       tags:            tagsArray,
       is_published:    publish,
       published_at:    publish ? (post?.published_at ?? now) : null,
-      cover_image_url: coverImage.trim() || null,
+      cover_image_url: normalizeUrl(coverImage) || null,
       brand:           brand,
       updated_at:      now,
     }

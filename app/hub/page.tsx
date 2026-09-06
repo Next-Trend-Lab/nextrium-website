@@ -4,6 +4,7 @@ import SectionTag from '@/components/shared/SectionTag'
 import CTABox from '@/components/ui/CTABox'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 import type { NTEvent, CommunityProject } from '@/lib/types/database'
 
 export const metadata = {
@@ -265,13 +266,13 @@ export default async function HubPage() {
                   {(project.website_url || project.github_url) && (
                     <div style={{ display: 'flex', gap: '12px', paddingTop: '12px' }}>
                       {project.website_url && (
-                        <a href={project.website_url} target="_blank" rel="noopener noreferrer"
+                        <a href={normalizeUrl(project.website_url)} target="_blank" rel="noopener noreferrer"
                           style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--orange)', textDecoration: 'none' }}>
                           Website ↗
                         </a>
                       )}
                       {project.github_url && (
-                        <a href={project.github_url} target="_blank" rel="noopener noreferrer"
+                        <a href={normalizeUrl(project.github_url)} target="_blank" rel="noopener noreferrer"
                           style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey-mid)', textDecoration: 'none' }}>
                           GitHub ↗
                         </a>

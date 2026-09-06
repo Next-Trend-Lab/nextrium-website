@@ -13,6 +13,7 @@ import Highlight from '@tiptap/extension-highlight'
 import Youtube from '@tiptap/extension-youtube'
 import { Placeholder } from '@tiptap/extensions'
 import { useCallback, useState } from 'react'
+import { normalizeUrl } from '@/lib/normalizeUrl'
 import ImageUpload from './ImageUpload'
 
 interface RichTextEditorProps {
@@ -90,10 +91,11 @@ export default function RichTextEditor({ content, onChange, placeholder = 'Start
 
   const insertLink = useCallback(() => {
     if (!editor || !linkUrl) return
+    const normalized = normalizeUrl(linkUrl)
     if (editor.state.selection.empty) {
-      editor.chain().focus().insertContent(`<a href="${linkUrl}">${linkUrl}</a>`).run()
+      editor.chain().focus().insertContent(`<a href="${normalized}">${normalized}</a>`).run()
     } else {
-      editor.chain().focus().setLink({ href: linkUrl }).run()
+      editor.chain().focus().setLink({ href: normalized }).run()
     }
     setLinkUrl('')
     setShowLinkInput(false)
