@@ -91,10 +91,12 @@ export default function ApplicationsClient({
   // ?status=, so it's real navigation (bookmarkable, back-button aware)
   // rather than in-page tab state.
   const searchParams = useSearchParams()
-  const statusTab = (searchParams.get('status') ?? 'all') as 'all' | Application['status'] | 'rebuttal'
+  const statusTab = (searchParams.get('status') ?? 'all') as 'all' | Application['status'] | 'rebuttal' | 'human-reviewed'
   const [applications, setApplications] = useState(initial)
   const [selected,     setSelected]     = useState<Application | null>(null)
   const [updating,     setUpdating]     = useState(false)
+  const [markingReviewed, setMarkingReviewed] = useState(false)
+  const [markReviewedError, setMarkReviewedError] = useState<string | null>(null)
   const [deleting,      setDeleting]      = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -186,6 +188,28 @@ export default function ApplicationsClient({
       })
     }
     setUpdating(false)
+  }
+
+  // Stamps the reviewed marker on its own, with no accompanying status
+  // change — for the case a reviewer looks at an application, agrees with
+  // its current status as-is, and wants that confirmation on record without
+  // pointlessly re-clicking the status it's already sitting at.
+  async function handleMarkHumanReviewed(id: string) {
+    setMarkingReviewed(true)
+    setMarkReviewedError(null)
+    const { reviewed, error } = await markApplicationReviewed(id)
+    if (reviewed) {
+      applyReviewedInfo(id, reviewed)
+      logActivityAction({
+        action: 'application_human_reviewed',
+        targetType: 'application',
+        targetId: id,
+        details: { note: 'Reviewed with no status change needed' },
+      }).catch(() => {})
+    } else if (error) {
+      setMarkReviewedError(error)
+    }
+    setMarkingReviewed(false)
   }
 
   async function handleDelete(id: string) {
@@ -576,6 +600,8 @@ export default function ApplicationsClient({
   const filteredApplications = searchedApplications.filter((app) => {
     if (statusTab === 'rebuttal') {
       if (!rebuttalStatuses[app.id]?.rebuttalSubmitted) return false
+    } else if (statusTab === 'human-reviewed') {
+      if (!(app as any).last_reviewed_by_email) return false
     } else if (statusTab !== 'all') {
       if (app.status !== statusTab) return false
     }
@@ -735,6 +761,9 @@ export default function ApplicationsClient({
         .detail-email { font-size: 13px; color: var(--orange); }
         .reviewed-chip { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 8px; background: rgba(34,193,122,0.1); border: 1px solid rgba(34,193,122,0.3); color: var(--success); }
         .reviewed-first-note { display: block; margin-top: 4px; font-size: 10.5px; color: var(--grey-mid); }
+        .mark-reviewed-btn { margin-top: 8px; padding: 6px 12px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; border: 1px solid rgba(34,193,122,0.35); background: rgba(34,193,122,0.06); color: var(--success); transition: all 0.15s ease; }
+        .mark-reviewed-btn:hover:not(:disabled) { background: rgba(34,193,122,0.15); }
+        .mark-reviewed-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .detail-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
         .detail-section-title { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--grey-mid); margin-bottom: 8px; }
         .detail-text { font-size: 13px; color: var(--off-white); line-height: 1.7; }
@@ -1231,7 +1260,7 @@ export default function ApplicationsClient({
                 <div className="detail-header">
                   <div className="detail-name">{selected.name}</div>
                   <div className="detail-email">{selected.email}</div>
-                  {(selected as any).last_reviewed_by_email && (
+                  {(selected as any).last_reviewed_by_email ? (
                     <div>
                       <span className="reviewed-chip">
                         ✓ Reviewed by {(selected as any).last_reviewed_by_email}
@@ -1242,6 +1271,21 @@ export default function ApplicationsClient({
                             First reviewed by {(selected as any).first_reviewed_by_email}
                           </span>
                         )}
+                    </div>
+                  ) : (
+                    <div>
+                      <button
+                        type="button"
+                        className="mark-reviewed-btn"
+                        onClick={() => handleMarkHumanReviewed(selected.id)}
+                        disabled={markingReviewed}
+                        title="Record that a human reviewed this application and confirmed its current status — no status change needed."
+                      >
+                        {markingReviewed ? 'Marking as reviewed…' : '✓ Mark as human reviewed'}
+                      </button>
+                      {markReviewedError && (
+                        <span className="reviewed-first-note" style={{ color: 'var(--error)' }}>{markReviewedError}</span>
+                      )}
                     </div>
                   )}
                 </div>

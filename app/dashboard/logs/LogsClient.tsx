@@ -18,6 +18,7 @@ const ACTION_LABELS: Record<string, string> = {
   application_screened: 'Screened candidate',
   application_rescanned: 'Rescanned candidate',
   application_status_updated: 'Updated status',
+  application_human_reviewed: 'Marked as human reviewed',
   feedback_emails_dispatched: 'Dispatched feedback emails',
   bulk_screen_started: 'Started bulk screening',
   rebuttal_accept: 'Accepted rebuttal',
@@ -57,6 +58,7 @@ const ACTION_COLORS: Record<string, string> = {
   application_screened: 'var(--orange)',
   application_rescanned: 'var(--orange)',
   application_status_updated: 'var(--slate)',
+  application_human_reviewed: 'var(--success)',
   feedback_emails_dispatched: 'var(--orange)',
   bulk_screen_started: 'var(--orange)',
   rebuttal_accept: 'var(--success)',
@@ -119,6 +121,8 @@ function summarizeDetails(log: TeamActivityLog): string {
       return `Score ${d.compositeScore ?? '—'}% · ${d.recommendation ?? '—'}`
     case 'application_status_updated':
       return `→ ${d.newStatus ?? '—'}`
+    case 'application_human_reviewed':
+      return (d.note as string) || 'No status change needed'
     case 'feedback_emails_dispatched':
       return `${d.sentCount ?? 0} sent, ${d.skippedCount ?? 0} skipped, ${d.failedCount ?? 0} failed`
     case 'bulk_screen_started':
